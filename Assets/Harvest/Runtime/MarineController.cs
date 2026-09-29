@@ -2,7 +2,8 @@ using UnityEngine;
 
 namespace Harvest
 {
-    [RequireComponent(typeof(CharacterController), typeof(Vitality), typeof(MarineLoadout), typeof(MarineArmor))]
+    [RequireComponent(typeof(CharacterController), typeof(Vitality), typeof(MarineLoadout))]
+    [RequireComponent(typeof(MarineArmor))]
     public sealed class MarineController : MonoBehaviour
     {
         public Camera View;
