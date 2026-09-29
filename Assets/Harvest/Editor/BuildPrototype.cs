@@ -296,7 +296,155 @@ namespace Harvest.Editor
         }
 
         static GameObject MakeViewModel(string name, Material material, Transform parent, Vector3 position, Vector3 scale)
-  …2115 tokens truncated…      definition.DamageRadius = 5f;
+        {
+            GameObject model = Block(name, material, Vector3.zero, scale);
+            model.transform.SetParent(parent, false);
+            model.transform.localPosition = position;
+            Object.DestroyImmediate(model.GetComponent<Collider>());
+            return model;
+        }
+
+        static PlasmaBolt MakeBoltPrefab(Material material)
+        {
+            string path = "Assets/Harvest/Prefabs/Plasma Bolt.prefab";
+            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existing != null) return existing.GetComponent<PlasmaBolt>();
+            GameObject root = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            root.name = "Plasma Bolt";
+            root.transform.localScale = Vector3.one * 0.26f;
+            Object.DestroyImmediate(root.GetComponent<Collider>());
+            root.GetComponent<Renderer>().sharedMaterial = material;
+            root.AddComponent<PlasmaBolt>();
+            GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            return saved.GetComponent<PlasmaBolt>();
+        }
+
+        static CovenantEnemy MakeEnemyPrefab<T>(string name, Material material, WeaponDefinition weapon, DroppedWeapon dropPrefab,
+            float health, float shield, float moveSpeed, float preferredRange, float visualHeight)
+            where T : EnemyBehavior
+        {
+            string path = $"Assets/Harvest/Prefabs/{name}.prefab";
+            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existing != null) return EnsureEnemyPrefab<T>(path, weapon, dropPrefab);
+            GameObject root = new GameObject(name);
+            CharacterController controller = root.AddComponent<CharacterController>();
+            bool isBrute = typeof(T) == typeof(BruteBehavior);
+            controller.height = isBrute ? 3.2f : 2f;
+            controller.radius = isBrute ? 0.62f : 0.42f;
+            Vitality vitality = root.AddComponent<Vitality>();
+            vitality.MaxHealth = health;
+            vitality.MaxShield = shield;
+            T behavior = root.AddComponent<T>();
+            behavior.MoveSpeed = moveSpeed;
+            behavior.PreferredRange = preferredRange;
+            ActorWeapon enemyWeapon = root.AddComponent<ActorWeapon>();
+            enemyWeapon.Team = CombatTeam.Covenant;
+            enemyWeapon.StartingWeapon = weapon;
+            enemyWeapon.DropPrefab = dropPrefab;
+            root.AddComponent<CovenantEnemy>();
+            root.AddComponent<CombatTarget>().Team = CombatTeam.Covenant;
+            root.AddComponent<Suppression>();
+            EnemyHealthBar bar = root.AddComponent<EnemyHealthBar>();
+            bar.Height = isBrute ? 3.3f : 2.1f;
+            EnemyHitFeedback feedback = root.AddComponent<EnemyHitFeedback>();
+            feedback.LabelHeight = isBrute ? 3.7f : 2.5f;
+            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            visual.name = "Visual";
+            visual.transform.SetParent(root.transform, false);
+            visual.transform.localScale = isBrute ? new Vector3(1.4f, visualHeight, 1.4f) : new Vector3(0.9f, visualHeight, 0.9f);
+            visual.GetComponent<Renderer>().sharedMaterial = material;
+            Object.DestroyImmediate(visual.GetComponent<Collider>());
+            AddHeldWeapon(root, weapon, isBrute);
+            if (behavior is JackalBehavior jackalBehavior) AddJackalShield(root, jackalBehavior);
+            GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            return saved.GetComponent<CovenantEnemy>();
+        }
+
+        static CovenantEnemy EnsureEnemyPrefab<T>(string path, WeaponDefinition weapon, DroppedWeapon dropPrefab) where T : EnemyBehavior
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            bool changed = false;
+            CombatTarget target = root.GetComponent<CombatTarget>();
+            if (target == null) { target = root.AddComponent<CombatTarget>(); changed = true; }
+            if (target.Team != CombatTeam.Covenant) { target.Team = CombatTeam.Covenant; changed = true; }
+            if (root.GetComponent<Suppression>() == null) { root.AddComponent<Suppression>(); changed = true; }
+            ActorWeapon enemyWeapon = root.GetComponent<ActorWeapon>();
+            if (enemyWeapon == null)
+            {
+                enemyWeapon = root.AddComponent<ActorWeapon>();
+                changed = true;
+            }
+            if (enemyWeapon.Team != CombatTeam.Covenant) { enemyWeapon.Team = CombatTeam.Covenant; changed = true; }
+            if (enemyWeapon.StartingWeapon == null) { enemyWeapon.StartingWeapon = weapon; changed = true; }
+            if (enemyWeapon.DropPrefab == null) { enemyWeapon.DropPrefab = dropPrefab; changed = true; }
+            if (root.transform.Find("Held weapon") == null)
+            {
+                AddHeldWeapon(root, enemyWeapon.StartingWeapon, typeof(T) == typeof(BruteBehavior));
+                changed = true;
+            }
+            if (root.GetComponent<EnemyHitFeedback>() == null)
+            {
+                EnemyHitFeedback feedback = root.AddComponent<EnemyHitFeedback>();
+                feedback.LabelHeight = typeof(T) == typeof(BruteBehavior) ? 3.7f : 2.5f;
+                changed = true;
+            }
+            if (root.GetComponent<JackalBehavior>() is JackalBehavior jackal && jackal.ShieldVisual == null)
+            {
+                AddJackalShield(root, jackal);
+                changed = true;
+            }
+            if (root.GetComponent<BruteBehavior>() is BruteBehavior brute && brute.ChargeTriggerRange <= 0f)
+            {
+                brute.ChargeTriggerRange = 14f;
+                brute.WindupSeconds = 0.85f;
+                brute.ChargeSeconds = 1.1f;
+                brute.ChargeSpeed = 8f;
+                brute.RecoverySeconds = 1.2f;
+                changed = true;
+            }
+            if (changed) PrefabUtility.SaveAsPrefabAsset(root, path);
+            PrefabUtility.UnloadPrefabContents(root);
+            return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<CovenantEnemy>();
+        }
+
+        static void AddJackalShield(GameObject root, JackalBehavior behavior)
+        {
+            GameObject plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            plate.name = "Front shield";
+            plate.transform.SetParent(root.transform, false);
+            plate.transform.localPosition = new Vector3(0f, 0.15f, 0.65f);
+            plate.transform.localScale = new Vector3(1.2f, 1.4f, 0.08f);
+            plate.GetComponent<Renderer>().sharedMaterial = MakeMaterial("Jackal Shield", new Color(0.13f, 0.77f, 1f), true);
+            Object.DestroyImmediate(plate.GetComponent<Collider>());
+            behavior.ShieldVisual = plate;
+        }
+
+        static void AddHeldWeapon(GameObject root, WeaponDefinition definition, bool isBrute)
+        {
+            GameObject model = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            model.name = "Held weapon";
+            model.transform.SetParent(root.transform, false);
+            model.transform.localPosition = isBrute ? new Vector3(0.85f, 0.25f, 0.55f) : new Vector3(0.45f, 0f, 0.5f);
+            model.transform.localScale = isBrute ? new Vector3(0.22f, 0.22f, 0.7f) : new Vector3(0.17f, 0.2f, 0.35f);
+            if (definition != null) model.GetComponent<Renderer>().sharedMaterial = definition.PickupMaterial;
+            Object.DestroyImmediate(model.GetComponent<Collider>());
+        }
+
+        static GrenadeDefinition MakeGrenade(string name, GrenadeKind kind, Material material, GrenadeExplosionVisual explosion)
+        {
+            string path = $"Assets/Harvest/Data/{name} Grenade.asset";
+            GrenadeDefinition definition = AssetDatabase.LoadAssetAtPath<GrenadeDefinition>(path);
+            if (definition == null)
+            {
+                definition = ScriptableObject.CreateInstance<GrenadeDefinition>();
+                definition.Kind = kind;
+                if (kind == GrenadeKind.Plasma)
+                {
+                    definition.FuseSeconds = 4f;
+                    definition.MaxDamage = 320f;
+                    definition.DamageRadius = 5f;
                     definition.ShieldMultiplier = 2f;
                     definition.BlastColor = new Color(0.3f, 0.4f, 1f);
                 }
