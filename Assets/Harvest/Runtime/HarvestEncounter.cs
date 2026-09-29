@@ -59,12 +59,15 @@ namespace Harvest
         void Spawn(CovenantEnemy.Kind kind, Vector3 position)
         {
             bool brute = kind == CovenantEnemy.Kind.Brute;
-            GameObject body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            GameObject body = new GameObject();
             body.name = brute ? "Brute" : kind == CovenantEnemy.Kind.Jackal ? "Jackal" : "Grunt";
             body.transform.position = position;
-            body.transform.localScale = brute ? new Vector3(1.4f, 1.6f, 1.4f) : new Vector3(0.9f, 0.9f, 0.9f);
-            body.GetComponent<Renderer>().sharedMaterial = brute ? BruteMaterial : kind == CovenantEnemy.Kind.Jackal ? JackalMaterial : GruntMaterial;
-            Destroy(body.GetComponent<Collider>());
+            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            visual.name = "Visual";
+            visual.transform.SetParent(body.transform, false);
+            visual.transform.localScale = brute ? new Vector3(1.4f, 1.6f, 1.4f) : new Vector3(0.9f, 0.9f, 0.9f);
+            visual.GetComponent<Renderer>().sharedMaterial = brute ? BruteMaterial : kind == CovenantEnemy.Kind.Jackal ? JackalMaterial : GruntMaterial;
+            Destroy(visual.GetComponent<Collider>());
             CharacterController cc = body.AddComponent<CharacterController>();
             cc.height = brute ? 3.2f : 2f;
             cc.radius = brute ? 0.62f : 0.42f;
