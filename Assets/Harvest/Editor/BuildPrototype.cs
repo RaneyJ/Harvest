@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.AI;
 
 namespace Harvest.Editor
 {
@@ -10,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "5";
+        const string SceneVersion = "6";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -29,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the current combat and armor setup. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing weapon and encounter assets are preserved.",
+                    "This scene predates the allied squad and expanded encounter. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning is preserved and three later waves are appended once to older encounters.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -77,6 +78,13 @@ namespace Harvest.Editor
             // Waist-high cover with open lanes. Everything is ordinary farm or freight infrastructure.
             Block("Checkpoint barricade left", concrete, new Vector3(-5, 0.7f, -7), new Vector3(4.5f, 1.4f, 1.3f));
             Block("Checkpoint barricade right", concrete, new Vector3(5, 0.7f, -7), new Vector3(4.5f, 1.4f, 1.3f));
+            Block("Reserve barricade", concrete, new Vector3(0, 0.7f, -13), new Vector3(3f, 1.4f, 1.3f));
+            CreateCover("Left checkpoint", new Vector3(-5f, 0.05f, -8.3f), new Vector3(3.3f, 0f, 0f));
+            CreateCover("Right checkpoint", new Vector3(5f, 0.05f, -8.3f), new Vector3(-3.3f, 0f, 0f));
+            CreateCover("Reserve checkpoint", new Vector3(0f, 0.05f, -14.3f), new Vector3(-2.4f, 0f, 0f));
+            CreateCover("Forward road left", new Vector3(-3f, 0.05f, 17.8f), new Vector3(-2.4f, 0f, 0f));
+            CreateCover("Forward road right", new Vector3(3f, 0.05f, 6.8f), new Vector3(2.4f, 0f, 0f));
+            new GameObject("Battlefield navigation").AddComponent<BattlefieldNavigation>();
             Block("Cargo left", rust, new Vector3(-7, 1.4f, 10), new Vector3(3, 2.8f, 4));
             Block("Cargo right", rust, new Vector3(8, 1.1f, 17), new Vector3(3, 2.2f, 5));
             Block("Loading station", concrete, new Vector3(-20, 4, 10), new Vector3(8, 8, 12));
@@ -101,6 +109,10 @@ namespace Harvest.Editor
             CovenantEnemy jackalPrefab = MakeEnemyPrefab<JackalBehavior>("Jackal", jackal, plasmaPistol, dropPrefab, 75, 85, 2.3f, 16f, 0.9f);
             CovenantEnemy brutePrefab = MakeEnemyPrefab<BruteBehavior>("Brute", brute, plasmaRifle, dropPrefab, 280, 0, 4.2f, 1.9f, 1.6f);
             EncounterDefinition encounterData = MakeEncounter(gruntPrefab, jackalPrefab, brutePrefab);
+            AlliedMarine allyPrefab = MakeMarinePrefab(human, rifleData, dropPrefab);
+            SpawnMarine(allyPrefab, "Cpl. Ortiz", new Vector3(-5f, 0.05f, -17f));
+            SpawnMarine(allyPrefab, "Pvt. Chen", new Vector3(5f, 0.05f, -17f));
+            SpawnMarine(allyPrefab, "Pvt. Doss", new Vector3(0f, 0.05f, -19f));
 
             GameObject player = new GameObject("Marine");
             player.transform.position = new Vector3(0, 1.2f, -21);
@@ -116,6 +128,7 @@ namespace Harvest.Editor
             loadout.Weapons = new[] { rifleData, shotgunData };
             loadout.DropPrefab = dropPrefab;
             MarineController marine = player.AddComponent<MarineController>();
+            player.AddComponent<CombatTarget>().Team = CombatTeam.Marine;
             GameObject view = new GameObject("Eyes");
             view.transform.SetParent(player.transform, false);
             view.transform.localPosition = new Vector3(0, 0.65f, 0);
@@ -314,6 +327,7 @@ namespace Harvest.Editor
             enemyWeapon.StartingWeapon = weapon;
             enemyWeapon.DropPrefab = dropPrefab;
             root.AddComponent<CovenantEnemy>();
+            root.AddComponent<CombatTarget>().Team = CombatTeam.Covenant;
             EnemyHealthBar bar = root.AddComponent<EnemyHealthBar>();
             bar.Height = isBrute ? 3.3f : 2.1f;
             EnemyHitFeedback feedback = root.AddComponent<EnemyHitFeedback>();
@@ -335,6 +349,9 @@ namespace Harvest.Editor
         {
             GameObject root = PrefabUtility.LoadPrefabContents(path);
             bool changed = false;
+            CombatTarget target = root.GetComponent<CombatTarget>();
+            if (target == null) { target = root.AddComponent<CombatTarget>(); changed = true; }
+            if (target.Team != CombatTeam.Covenant) { target.Team = CombatTeam.Covenant; changed = true; }
             ActorWeapon enemyWeapon = root.GetComponent<ActorWeapon>();
             if (enemyWeapon == null)
             {
@@ -414,28 +431,117 @@ namespace Harvest.Editor
         static EncounterDefinition MakeEncounter(CovenantEnemy grunt, CovenantEnemy jackal, CovenantEnemy brute)
         {
             EncounterDefinition definition = AssetDatabase.LoadAssetAtPath<EncounterDefinition>(EncounterPath);
-            if (definition != null && definition.Waves != null && definition.Waves.Length > 0) return definition;
             if (definition == null)
             {
                 definition = ScriptableObject.CreateInstance<EncounterDefinition>();
                 AssetDatabase.CreateAsset(definition, EncounterPath);
             }
-            definition.Waves = new[]
+            if (definition.Waves == null || definition.Waves.Length == 0)
             {
-                new EncounterWave
+                definition.Waves = new[]
                 {
-                    Callout = "UNKNOWN HOSTILES — HOLD THE ROAD", DelaySeconds = 2f,
-                    Enemies = new[] { Spawn(grunt, -6, 24), Spawn(grunt, 0, 27), Spawn(grunt, 6, 24) }
-                },
-                new EncounterWave
+                    new EncounterWave
+                    {
+                        Callout = "UNKNOWN HOSTILES — HOLD THE ROAD", DelaySeconds = 2f,
+                        Enemies = new[] { Spawn(grunt, -6, 24), Spawn(grunt, 0, 27), Spawn(grunt, 6, 24) }
+                    },
+                    new EncounterWave
+                    {
+                        Callout = "HEAVY CONTACT — KEEP THEM OFF THE CHECKPOINT", DelaySeconds = 5f,
+                        Enemies = new[] { Spawn(grunt, -8, 31), Spawn(grunt, 8, 31), Spawn(grunt, -3, 34),
+                            Spawn(grunt, 3, 34), Spawn(jackal, -6, 36), Spawn(brute, 0, 38) }
+                    }
+                };
+            }
+            if (definition.PrototypeWaveRevision < 1)
+            {
+                var waves = new System.Collections.Generic.List<EncounterWave>(definition.Waves);
+                waves.Add(new EncounterWave
                 {
-                    Callout = "THE LINE IS BROKEN — CLEAR A PATH", DelaySeconds = 4f,
-                    Enemies = new[] { Spawn(grunt, -8, 31), Spawn(grunt, 8, 31), Spawn(grunt, -3, 34),
-                        Spawn(grunt, 3, 34), Spawn(jackal, -6, 36), Spawn(brute, 0, 38) }
-                }
-            };
+                    Callout = "SHIELD LINE ADVANCING — WATCH THE FLANKS", DelaySeconds = 7f,
+                    Enemies = new[] { Spawn(grunt, -10, 30), Spawn(grunt, 10, 30), Spawn(grunt, -5, 35),
+                        Spawn(grunt, 5, 35), Spawn(jackal, -7, 37), Spawn(jackal, 7, 37), Spawn(brute, 0, 42) }
+                });
+                waves.Add(new EncounterWave
+                {
+                    Callout = "BRUTES ON THE ROAD — FALL BACK TO COVER", DelaySeconds = 8f,
+                    Enemies = new[] { Spawn(grunt, -10, 30), Spawn(grunt, 10, 30), Spawn(grunt, -4, 34),
+                        Spawn(grunt, 4, 34), Spawn(jackal, -8, 38), Spawn(jackal, 8, 38),
+                        Spawn(brute, -3, 43), Spawn(brute, 3, 43) }
+                });
+                waves.Add(new EncounterWave
+                {
+                    Callout = "FINAL ASSAULT — TRANSPORT INBOUND", DelaySeconds = 9f,
+                    Enemies = new[] { Spawn(grunt, -10, 31), Spawn(grunt, 10, 31), Spawn(grunt, -5, 34),
+                        Spawn(grunt, 5, 34), Spawn(grunt, 0, 36), Spawn(jackal, -8, 39), Spawn(jackal, 0, 40),
+                        Spawn(jackal, 8, 39), Spawn(brute, -4, 44), Spawn(brute, 4, 44) }
+                });
+                definition.Waves = waves.ToArray();
+                definition.PrototypeWaveRevision = 1;
+            }
             EditorUtility.SetDirty(definition);
             return definition;
+        }
+
+        static void CreateCover(string name, Vector3 position, Vector3 peekOffset)
+        {
+            GameObject root = new GameObject(name + " cover slot");
+            root.transform.position = position;
+            root.AddComponent<CoverPoint>().PeekOffset = peekOffset;
+        }
+
+        static AlliedMarine MakeMarinePrefab(Material material, WeaponDefinition rifle, DroppedWeapon drop)
+        {
+            const string path = "Assets/Harvest/Prefabs/Allied Marine.prefab";
+            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existing != null) return existing.GetComponent<AlliedMarine>();
+            GameObject root = new GameObject("Allied Marine");
+            NavMeshAgent agent = root.AddComponent<NavMeshAgent>();
+            agent.enabled = false; // Enabled in Start after the navigation surface is ready.
+            agent.speed = 3.2f;
+            agent.acceleration = 12f;
+            agent.angularSpeed = 360f;
+            agent.radius = 0.4f;
+            agent.height = 1.9f;
+            agent.stoppingDistance = 0.15f;
+            CapsuleCollider collider = root.AddComponent<CapsuleCollider>();
+            collider.height = 1.9f;
+            collider.radius = 0.35f;
+            collider.center = Vector3.up * 0.95f;
+            root.AddComponent<Vitality>().MaxHealth = 100f;
+            root.AddComponent<MarineArmor>().MaxArmor = 175f;
+            CombatTarget target = root.AddComponent<CombatTarget>();
+            target.Team = CombatTeam.Marine;
+            target.AimOffset = Vector3.up * 1.45f;
+            ActorWeapon weapon = root.AddComponent<ActorWeapon>();
+            weapon.Team = CombatTeam.Marine;
+            weapon.StartingWeapon = rifle;
+            weapon.DropPrefab = drop;
+            AlliedMarine marine = root.AddComponent<AlliedMarine>();
+            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            visual.name = "Visual";
+            visual.transform.SetParent(root.transform, false);
+            visual.transform.localPosition = Vector3.up * 0.95f;
+            visual.transform.localScale = new Vector3(0.7f, 0.95f, 0.7f);
+            visual.GetComponent<Renderer>().sharedMaterial = material;
+            Object.DestroyImmediate(visual.GetComponent<Collider>());
+            marine.BodyVisual = visual.transform;
+            AddHeldWeapon(root, rifle, false);
+            marine.GunVisual = root.transform.Find("Held weapon");
+            marine.GunVisual.localPosition = new Vector3(0.38f, 1.25f, 0.45f);
+            marine.GunVisual.localScale = new Vector3(0.17f, 0.2f, 0.65f);
+            GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            return saved.GetComponent<AlliedMarine>();
+        }
+
+        static void SpawnMarine(AlliedMarine prefab, string callSign, Vector3 position)
+        {
+            GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab.gameObject);
+            instance.transform.position = position;
+            AlliedMarine marine = instance.GetComponent<AlliedMarine>();
+            marine.CallSign = callSign;
+            marine.name = callSign;
         }
 
         static EnemySpawn Spawn(CovenantEnemy prefab, float x, float z)

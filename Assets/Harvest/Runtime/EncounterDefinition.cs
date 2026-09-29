@@ -22,6 +22,7 @@ namespace Harvest
     public sealed class EncounterDefinition : ScriptableObject
     {
         public EncounterWave[] Waves;
+        [HideInInspector] public int PrototypeWaveRevision;
         public string EvacuationCallout = "REACH THE EVACUATION PAD";
     }
 }

@@ -16,10 +16,12 @@ namespace Harvest
 
         void Update() => Equipped?.Tick();
 
-        public bool TryFire(Vector3 origin, Vector3 direction)
+        public bool TryFire(Vector3 origin, Vector3 direction, float spreadDegrees = 0f)
         {
-            if (Equipped == null) return false;
-            return WeaponRuntime.Fire(Equipped, origin, Quaternion.LookRotation(direction), Team);
+            if (Equipped == null || direction.sqrMagnitude < 0.001f) return false;
+            Quaternion aim = Quaternion.LookRotation(direction) * Quaternion.Euler(
+                Random.Range(-spreadDegrees, spreadDegrees), Random.Range(-spreadDegrees, spreadDegrees), 0f);
+            return WeaponRuntime.Fire(Equipped, origin, aim, Team);
         }
 
         public void Drop()

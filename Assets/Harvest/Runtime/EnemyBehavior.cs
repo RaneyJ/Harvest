@@ -10,7 +10,7 @@ namespace Harvest
         {
             return distance > PreferredRange ? towardTarget * MoveSpeed : Vector3.zero;
         }
-        public abstract void TryAttack(CovenantEnemy self, MarineController target, float distance, bool hasLineOfSight);
+        public abstract void TryAttack(CovenantEnemy self, CombatTarget target, float distance, bool hasLineOfSight);
     }
 
 }

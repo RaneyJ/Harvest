@@ -14,6 +14,7 @@ namespace Harvest
 
         enum Phase { Approaching, Windup, Charging, Recovering }
         Phase phase;
+        public bool IsCommitted => phase == Phase.Windup || phase == Phase.Charging;
         float phaseUntil;
         Vector3 chargeDirection;
         Renderer body;
@@ -32,7 +33,7 @@ namespace Harvest
             return base.DesiredMovement(towardTarget, distance);
         }
 
-        public override void TryAttack(CovenantEnemy self, MarineController target, float distance, bool hasLineOfSight)
+        public override void TryAttack(CovenantEnemy self, CombatTarget target, float distance, bool hasLineOfSight)
         {
             if (phase == Phase.Windup || phase == Phase.Charging)
                 SetTint(new Color(1f, 0.24f, 0.12f));
@@ -43,7 +44,7 @@ namespace Harvest
                     if (hasLineOfSight)
                     {
                         Vector3 muzzle = self.transform.position + Vector3.up * 1.6f;
-                        self.GetComponent<ActorWeapon>()?.TryFire(muzzle, (target.View.transform.position - muzzle).normalized);
+                        self.GetComponent<ActorWeapon>()?.TryFire(muzzle, (target.AimPosition - muzzle).normalized);
                     }
                     return;
                 }

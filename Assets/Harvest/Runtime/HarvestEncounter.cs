@@ -22,6 +22,17 @@ namespace Harvest
 
         public string Status { get; private set; } = "HOLD THE ROAD";
         public int Hostiles => alive.Count;
+        public int AlliesAlive
+        {
+            get
+            {
+                int count = 0;
+                foreach (CombatTarget target in CombatTarget.Active)
+                    if (target != null && target.Team == CombatTeam.Marine && target.IsAlive &&
+                        target.GetComponent<AlliedMarine>() != null) count++;
+                return count;
+            }
+        }
         public int MarinesLeft => names.Length - marineIndex;
         public bool IsEvacuating => evacuating;
         public bool IsFinished { get; private set; }

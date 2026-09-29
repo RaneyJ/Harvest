@@ -20,6 +20,7 @@ namespace Harvest
 
         void OnTriggerEnter(Collider other)
         {
+            if (other.GetComponentInParent<MarineController>() == null) return;
             MarineArmor armor = other.GetComponentInParent<MarineArmor>();
             if (armor != null && armor.RestoreArmor(ArmorAmount) > 0f)
                 Destroy(gameObject);

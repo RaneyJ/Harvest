@@ -21,7 +21,7 @@ namespace Harvest
             return base.DesiredMovement(towardTarget, distance);
         }
 
-        public override void TryAttack(CovenantEnemy self, MarineController target, float distance, bool hasLineOfSight)
+        public override void TryAttack(CovenantEnemy self, CombatTarget target, float distance, bool hasLineOfSight)
         {
             if (Time.time >= panicUntil) base.TryAttack(self, target, distance, hasLineOfSight);
         }

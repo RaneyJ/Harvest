@@ -6,11 +6,11 @@ namespace Harvest
     {
         public float AttackHeight = 1.2f;
 
-        public override void TryAttack(CovenantEnemy self, MarineController target, float distance, bool hasLineOfSight)
+        public override void TryAttack(CovenantEnemy self, CombatTarget target, float distance, bool hasLineOfSight)
         {
             if (!hasLineOfSight) return;
             Vector3 origin = self.transform.position + Vector3.up * AttackHeight;
-            self.GetComponent<ActorWeapon>()?.TryFire(origin, (target.View.transform.position - origin).normalized);
+            self.GetComponent<ActorWeapon>()?.TryFire(origin, (target.AimPosition - origin).normalized);
         }
     }
 }
