@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Harvest
@@ -7,17 +8,19 @@ namespace Harvest
     // A shared firing and damage path. Input, enemy AI, and later allied marine AI call this.
     public static class WeaponRuntime
     {
-        public static bool Fire(WeaponInstance weapon, Vector3 origin, Quaternion aim, CombatTeam team, bool charged = false)
+        public static bool Fire(WeaponInstance weapon, Vector3 origin, Quaternion aim, CombatTeam team, bool charged = false, Suppression shooter = null)
         {
             if (weapon == null || !weapon.TryConsumeShot(charged)) return false;
             WeaponDefinition definition = weapon.Definition;
             float damage = charged ? definition.ChargedDamage : definition.DamagePerPellet;
+            float spread = definition.SpreadDegrees + (shooter != null ? shooter.AccuracyPenaltyDegrees : 0f);
+            var exposures = definition.ShotKind == WeaponShotKind.Hitscan ? new Dictionary<Suppression, float>() : null;
             bool hitOpponent = false;
             for (int i = 0; i < definition.Pellets; i++)
             {
                 Vector3 direction = aim * (Quaternion.Euler(
-                    Random.Range(-definition.SpreadDegrees, definition.SpreadDegrees),
-                    Random.Range(-definition.SpreadDegrees, definition.SpreadDegrees), 0f) * Vector3.forward);
+                    Random.Range(-spread, spread),
+                    Random.Range(-spread, spread), 0f) * Vector3.forward);
                 if (definition.ShotKind == WeaponShotKind.PlasmaBolt)
                 {
                     if (definition.ProjectilePrefab == null) continue;
@@ -26,12 +29,20 @@ namespace Harvest
                         damage, definition.ShieldMultiplier, charged);
                     if (charged) bolt.transform.localScale *= 1.7f;
                 }
-                else if (Physics.Raycast(origin, direction, out RaycastHit hit, definition.Range, ~0, QueryTriggerInteraction.Ignore))
+                else
                 {
-                    hitOpponent |= ApplyHit(hit.collider, team, damage,
-                        definition.ShieldMultiplier, origin, charged);
+                    Vector3 end = origin + direction * definition.Range;
+                    if (Physics.Raycast(origin, direction, out RaycastHit hit, definition.Range, ~0, QueryTriggerInteraction.Ignore))
+                    {
+                        end = hit.point;
+                        // Observe before damage so a lethal impact still uses the living target's body.
+                        Suppression.ObserveSegment(origin, end, team, exposures, false);
+                        hitOpponent |= ApplyHit(hit.collider, team, damage, definition.ShieldMultiplier, origin, charged);
+                    }
+                    else Suppression.ObserveSegment(origin, end, team, exposures, false);
                 }
             }
+            if (exposures != null) Suppression.ApplyExposures(exposures);
             return hitOpponent;
         }
 

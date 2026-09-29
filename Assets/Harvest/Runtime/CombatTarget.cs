@@ -10,6 +10,8 @@ namespace Harvest
         public CombatTeam Team;
         public Vector3 AimOffset = new Vector3(0f, 0.45f, 0f);
         public static readonly List<CombatTarget> Active = new List<CombatTarget>();
+        Suppression pressure;
+        public Suppression Pressure => pressure != null ? pressure : (pressure = GetComponent<Suppression>());
         Vitality vitality;
         MarineController player;
 
@@ -19,7 +21,7 @@ namespace Harvest
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetRegistry() => Active.Clear();
-        void Awake() { vitality = GetComponent<Vitality>(); player = GetComponent<MarineController>(); }
+        void Awake() { vitality = GetComponent<Vitality>(); player = GetComponent<MarineController>(); pressure = GetComponent<Suppression>(); }
         void OnEnable() { if (!Active.Contains(this)) Active.Add(this); }
         void OnDisable() => Active.Remove(this);
 

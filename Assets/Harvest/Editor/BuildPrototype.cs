@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "6";
+        const string SceneVersion = "7";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the allied squad and expanded encounter. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning is preserved and three later waves are appended once to older encounters.",
+                    "This scene predates player crouching and suppression. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -128,7 +128,7 @@ namespace Harvest.Editor
             loadout.Weapons = new[] { rifleData, shotgunData };
             loadout.DropPrefab = dropPrefab;
             MarineController marine = player.AddComponent<MarineController>();
-            player.AddComponent<CombatTarget>().Team = CombatTeam.Marine;
+            player.GetComponent<CombatTarget>().Team = CombatTeam.Marine;
             GameObject view = new GameObject("Eyes");
             view.transform.SetParent(player.transform, false);
             view.transform.localPosition = new Vector3(0, 0.65f, 0);
@@ -136,6 +136,9 @@ namespace Harvest.Editor
             camera.fieldOfView = 75f;
             camera.tag = "MainCamera";
             view.AddComponent<AudioListener>();
+            SuppressionScreenBlur blur = view.AddComponent<SuppressionScreenBlur>();
+            blur.State = player.GetComponent<Suppression>();
+            blur.BlurShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Harvest/Shaders/SuppressionBlur.shader");
             marine.View = camera;
             loadout.View = camera;
             GameObject rifle = Block("Service rifle silhouette", human, new Vector3(0, 0, 0), new Vector3(0.13f, 0.14f, 0.65f));
@@ -328,6 +331,7 @@ namespace Harvest.Editor
             enemyWeapon.DropPrefab = dropPrefab;
             root.AddComponent<CovenantEnemy>();
             root.AddComponent<CombatTarget>().Team = CombatTeam.Covenant;
+            root.AddComponent<Suppression>();
             EnemyHealthBar bar = root.AddComponent<EnemyHealthBar>();
             bar.Height = isBrute ? 3.3f : 2.1f;
             EnemyHitFeedback feedback = root.AddComponent<EnemyHitFeedback>();
@@ -352,6 +356,7 @@ namespace Harvest.Editor
             CombatTarget target = root.GetComponent<CombatTarget>();
             if (target == null) { target = root.AddComponent<CombatTarget>(); changed = true; }
             if (target.Team != CombatTeam.Covenant) { target.Team = CombatTeam.Covenant; changed = true; }
+            if (root.GetComponent<Suppression>() == null) { root.AddComponent<Suppression>(); changed = true; }
             ActorWeapon enemyWeapon = root.GetComponent<ActorWeapon>();
             if (enemyWeapon == null)
             {
@@ -494,7 +499,17 @@ namespace Harvest.Editor
         {
             const string path = "Assets/Harvest/Prefabs/Allied Marine.prefab";
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (existing != null) return existing.GetComponent<AlliedMarine>();
+            if (existing != null)
+            {
+                GameObject contents = PrefabUtility.LoadPrefabContents(path);
+                if (contents.GetComponent<Suppression>() == null)
+                {
+                    contents.AddComponent<Suppression>();
+                    PrefabUtility.SaveAsPrefabAsset(contents, path);
+                }
+                PrefabUtility.UnloadPrefabContents(contents);
+                return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<AlliedMarine>();
+            }
             GameObject root = new GameObject("Allied Marine");
             NavMeshAgent agent = root.AddComponent<NavMeshAgent>();
             agent.enabled = false; // Enabled in Start after the navigation surface is ready.
@@ -513,6 +528,7 @@ namespace Harvest.Editor
             CombatTarget target = root.AddComponent<CombatTarget>();
             target.Team = CombatTeam.Marine;
             target.AimOffset = Vector3.up * 1.45f;
+            root.AddComponent<Suppression>();
             ActorWeapon weapon = root.AddComponent<ActorWeapon>();
             weapon.Team = CombatTeam.Marine;
             weapon.StartingWeapon = rifle;

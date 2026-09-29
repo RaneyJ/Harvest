@@ -5,6 +5,7 @@ namespace Harvest
 {
     [RequireComponent(typeof(NavMeshAgent), typeof(Vitality), typeof(MarineArmor))]
     [RequireComponent(typeof(ActorWeapon), typeof(CombatTarget), typeof(CapsuleCollider))]
+    [RequireComponent(typeof(Suppression))]
     public sealed class AlliedMarine : MonoBehaviour
     {
         public string CallSign = "Marine";
@@ -104,7 +105,7 @@ namespace Harvest
             if (!gun.Definition.UsesEnergy && gun.Magazine == 0) gun.BeginReload();
             bool empty = gun.Definition.UsesEnergy ? gun.Energy < gun.Definition.EnergyPerShot :
                 gun.Magazine == 0 && gun.Reserve == 0;
-            bool mustHide = empty || target == null || Time.time < suppressedUntil || gun.ReloadUntil > Time.time;
+            bool mustHide = empty || target == null || (identity.Pressure != null && identity.Pressure.Value >= 0.55f) || Time.time < suppressedUntil || gun.ReloadUntil > Time.time;
             if (cover == null)
             {
                 agent.isStopped = true;

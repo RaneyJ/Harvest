@@ -10,6 +10,7 @@ namespace Harvest
         public MarineLoadout Loadout;
         public HarvestEncounter Encounter;
 
+        Suppression suppression;
         string status;
         string callSign;
         string weapon;
@@ -29,6 +30,7 @@ namespace Harvest
 
         void Start()
         {
+            suppression = Marine.GetComponent<Suppression>();
             if (Armor == null)
             {
                 Debug.LogError("The Line HUD needs the armor update. Stop Play mode and choose Harvest > Build The Line Prototype.", this);
@@ -121,6 +123,9 @@ namespace Harvest
                 }
             }
             GUI.color = Color.white;
+            if (suppression != null && suppression.Value > 0.05f && Marine.Vitality.IsAlive)
+                GUI.Box(new Rect(Screen.width - 200f, Screen.height - 64f, 184f, 42f),
+                    $"SUPPRESSED {Mathf.CeilToInt(suppression.Value * 100f)}%");
             if (evacuating && !finished)
                 GUI.Box(new Rect(Screen.width - 260, 16, 244, 45), "EVAC PAD: GREEN BEACON BEHIND LINE");
         }

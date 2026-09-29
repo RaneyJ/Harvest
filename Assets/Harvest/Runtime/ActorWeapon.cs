@@ -9,8 +9,11 @@ namespace Harvest
         public DroppedWeapon DropPrefab;
         public WeaponInstance Equipped { get; private set; }
 
+        Suppression suppression;
+
         void Awake()
         {
+            suppression = GetComponent<Suppression>();
             if (StartingWeapon != null) Equipped = new WeaponInstance(StartingWeapon);
         }
 
@@ -21,7 +24,7 @@ namespace Harvest
             if (Equipped == null || direction.sqrMagnitude < 0.001f) return false;
             Quaternion aim = Quaternion.LookRotation(direction) * Quaternion.Euler(
                 Random.Range(-spreadDegrees, spreadDegrees), Random.Range(-spreadDegrees, spreadDegrees), 0f);
-            return WeaponRuntime.Fire(Equipped, origin, aim, Team);
+            return WeaponRuntime.Fire(Equipped, origin, aim, Team, false, suppression);
         }
 
         public void Drop()

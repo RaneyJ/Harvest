@@ -17,6 +17,7 @@ namespace Harvest
         WeaponInstance chargingWeapon;
         float chargeStarted;
         Vitality vitality;
+        Suppression suppression;
         HarvestEncounter encounter;
 
         public WeaponDefinition Current => Equipped?.Definition;
@@ -30,6 +31,7 @@ namespace Harvest
         void Awake()
         {
             vitality = GetComponent<Vitality>();
+            suppression = GetComponent<Suppression>();
             encounter = FindFirstObjectByType<HarvestEncounter>();
             ResetLoadout();
         }
@@ -125,7 +127,7 @@ namespace Harvest
             if (!Current.UsesEnergy && Equipped.Magazine <= 0 && Equipped.BeginReload()) Changed?.Invoke();
             int before = Current.UsesEnergy ? Equipped.Energy : Equipped.Magazine;
             bool hit = WeaponRuntime.Fire(Equipped, View.transform.position, View.transform.rotation,
-                CombatTeam.Marine, charged);
+                CombatTeam.Marine, charged, suppression);
             int after = Current.UsesEnergy ? Equipped.Energy : Equipped.Magazine;
             if (before != after) Changed?.Invoke();
             if (hit) HitEnemy?.Invoke();
