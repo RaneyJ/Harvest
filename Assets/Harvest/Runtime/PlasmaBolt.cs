@@ -34,7 +34,7 @@ namespace Harvest
             if (Physics.Raycast(start, step.normalized, out RaycastHit hit, step.magnitude, ~0, QueryTriggerInteraction.Ignore))
             {
                 Suppression.ObserveSegment(start, hit.point, team, exposures, true);
-                WeaponRuntime.PresentImpact(hit, start);
+                WeaponRuntime.PresentImpact(hit, start, WeaponShotKind.PlasmaBolt);
                 WeaponRuntime.ApplyHit(hit.collider, team, damage, shieldMultiplier, start, breaksShield);
                 Destroy(gameObject);
                 return;

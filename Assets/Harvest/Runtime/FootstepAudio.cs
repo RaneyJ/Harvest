@@ -12,7 +12,8 @@ namespace Harvest
         [Min(0.2f)] public float WalkStride = 1.8f;
         [Min(0.2f)] public float SprintStride = 2.35f;
         [Min(0.2f)] public float CrouchStride = 1.6f;
-        [Range(0f, 1f)] public float Volume = 0.3f;
+        [Range(0f, 1f)] public float Volume = 0.18f;
+        [HideInInspector] public int AudioMixRevision;
         CharacterController controller;
         MarineController player;
         Vitality vitality;

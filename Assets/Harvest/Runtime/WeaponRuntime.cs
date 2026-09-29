@@ -12,8 +12,9 @@ namespace Harvest
         public static event System.Action<WeaponDefinition, Vector3, Vector3, CombatTeam> ShotPresented;
         public static event System.Action<Vector3, Vector3, CombatImpactKind> ImpactPresented;
         public static event System.Action<WeaponDefinition, Vector3> ReloadPresented;
+        public static event System.Action<Vector3> PlasmaWorldImpactPresented;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetPresentation() { HitscanFired = null; ShotPresented = null; ImpactPresented = null; ReloadPresented = null; }
+        static void ResetPresentation() { HitscanFired = null; ShotPresented = null; ImpactPresented = null; ReloadPresented = null; PlasmaWorldImpactPresented = null; }
         public static bool Fire(WeaponInstance weapon, Vector3 origin, Quaternion aim, CombatTeam team, bool charged = false, Suppression shooter = null, bool aimingDownSights = false)
         {
             if (weapon == null || !weapon.TryConsumeShot(charged)) return false;
@@ -58,7 +59,7 @@ namespace Harvest
 
         public static void PresentReload(WeaponDefinition definition, Vector3 origin) => ReloadPresented?.Invoke(definition, origin);
 
-        public static void PresentImpact(RaycastHit hit, Vector3 origin)
+        public static void PresentImpact(RaycastHit hit, Vector3 origin, WeaponShotKind shotKind = WeaponShotKind.Hitscan)
         {
             CombatTarget target = hit.collider.GetComponentInParent<CombatTarget>();
             CombatImpactKind kind = CombatImpactKind.World;
@@ -70,6 +71,8 @@ namespace Harvest
                 kind = shield ? CombatImpactKind.Shield : armor != null && armor.Armor > 0f ? CombatImpactKind.Armor : CombatImpactKind.Flesh;
             }
             ImpactPresented?.Invoke(hit.point, hit.normal, kind);
+            if (shotKind == WeaponShotKind.PlasmaBolt && kind == CombatImpactKind.World)
+                PlasmaWorldImpactPresented?.Invoke(hit.point);
         }
 
         public static float Spread(WeaponDefinition definition, Suppression shooter, bool aimingDownSights) =>

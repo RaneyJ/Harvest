@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "16";
+        const string SceneVersion = "17";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -188,6 +188,9 @@ namespace Harvest.Editor
             director.AddComponent<CombatEffects>().EffectMaterial = combatMaterial;
             CombatAudio audio = director.AddComponent<CombatAudio>();
             audio.Player = loadout;
+            audio.PlasmaWorldImpacts = new[] {
+                AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/PlasmaWorldImpact2.ogg"),
+                AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/PlasmaWorldImpact3.ogg") };
             audio.Wind = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/FieldWind.ogg");
             HarvestEncounter encounter = director.AddComponent<HarvestEncounter>();
             encounter.Marine = marine;
@@ -472,6 +475,7 @@ namespace Harvest.Editor
         static void ConfigureFootsteps(GameObject actor)
         {
             FootstepAudio steps = actor.AddComponent<FootstepAudio>();
+            steps.AudioMixRevision = 1;
             steps.Gravel = new AudioClip[4]; steps.Wood = new AudioClip[5];
             for (int i = 0; i < steps.Gravel.Length; i++)
                 steps.Gravel[i] = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/FootstepGravel" + (i + 1) + ".ogg");
@@ -752,6 +756,8 @@ namespace Harvest.Editor
                 if (contents.GetComponent<Suppression>() == null) { contents.AddComponent<Suppression>(); changed = true; }
                 if (contents.GetComponent<MeleeAttack>() == null) { contents.AddComponent<MeleeAttack>(); changed = true; }
                 if (contents.GetComponent<FootstepAudio>() == null) { ConfigureFootsteps(contents); changed = true; }
+                FootstepAudio steps = contents.GetComponent<FootstepAudio>();
+                if (steps.AudioMixRevision < 1) { steps.Volume *= 0.6f; steps.AudioMixRevision = 1; changed = true; }
                 if (changed) PrefabUtility.SaveAsPrefabAsset(contents, path);
                 PrefabUtility.UnloadPrefabContents(contents);
                 return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<AlliedMarine>();
