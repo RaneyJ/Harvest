@@ -6,6 +6,7 @@ namespace Harvest
     public sealed class WeaponView : MonoBehaviour
     {
         public MarineLoadout Loadout;
+        public WeaponDefinition[] Definitions;
         public GameObject[] Models;
 
         void Start()
@@ -22,7 +23,7 @@ namespace Harvest
         void Refresh()
         {
             for (int i = 0; i < Models.Length; i++)
-                if (Models[i] != null) Models[i].SetActive(i == Loadout.SelectedIndex);
+                if (Models[i] != null) Models[i].SetActive(Definitions != null && i < Definitions.Length && Definitions[i] == Loadout.Current);
         }
     }
 }

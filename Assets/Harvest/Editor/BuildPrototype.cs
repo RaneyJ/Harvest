@@ -10,7 +10,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "3";
+        const string SceneVersion = "4";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -55,6 +55,7 @@ namespace Harvest.Editor
             Material jackal = MakeMaterial("Jackal", new Color(0.25f, 0.55f, 0.78f), true);
             Material brute = MakeMaterial("Brute", new Color(0.29f, 0.25f, 0.26f));
             Material plasma = MakeMaterial("Plasma", new Color(0.4f, 0.15f, 0.85f), true);
+            Material plasmaRifleColor = MakeMaterial("Plasma Rifle", new Color(0.18f, 0.35f, 0.85f), true);
             Material armorMaterial = MakeMaterial("Armor Supply", new Color(0.24f, 0.67f, 0.49f), true);
             Material beacon = MakeMaterial("Evac Beacon", new Color(0.17f, 0.9f, 0.35f), true);
 
@@ -90,12 +91,15 @@ namespace Harvest.Editor
             CreateArmorPickup(new Vector3(-5f, 0.8f, 13f), armorMaterial, 80f);
             for (int i = 0; i < 3; i++) Smoke(new Vector3(-18 + i * 20, 0.3f, 40 + i * 10));
 
-            WeaponDefinition rifleData = MakeWeapon("Service Rifle", "SERVICE RIFLE", 32, 128, 24f, 1f, 1, 0f, 90f, 0.12f, 1.8f, true);
-            WeaponDefinition shotgunData = MakeWeapon("Combat Shotgun", "COMBAT SHOTGUN", 6, 24, 14f, 1.35f, 8, 6f, 22f, 0.75f, 2.3f, false);
+            WeaponDefinition rifleData = MakeWeapon("Service Rifle", "SERVICE RIFLE", 32, 128, 24f, 1f, 1, 0f, 90f, 0.12f, 1.8f, true, human);
+            WeaponDefinition shotgunData = MakeWeapon("Combat Shotgun", "COMBAT SHOTGUN", 6, 24, 14f, 1.35f, 8, 6f, 22f, 0.75f, 2.3f, false, rust);
             PlasmaBolt bolt = MakeBoltPrefab(plasma);
-            CovenantEnemy gruntPrefab = MakeEnemyPrefab<GruntBehavior>("Grunt", grunt, bolt, 48, 0, 2.6f, 12f, 1.8f, 0.9f);
-            CovenantEnemy jackalPrefab = MakeEnemyPrefab<JackalBehavior>("Jackal", jackal, bolt, 75, 85, 2.3f, 16f, 2.1f, 0.9f);
-            CovenantEnemy brutePrefab = MakeEnemyPrefab<BruteBehavior>("Brute", brute, bolt, 280, 0, 4.2f, 1.9f, 1.2f, 1.6f);
+            WeaponDefinition plasmaPistol = MakePlasmaWeapon("Plasma Pistol", 20f, 1.7f, 2, 0.55f, 17f, false, bolt, plasma);
+            WeaponDefinition plasmaRifle = MakePlasmaWeapon("Plasma Rifle", 12f, 1.25f, 3, 0.13f, 22f, true, bolt, plasmaRifleColor);
+            DroppedWeapon dropPrefab = MakeDropPrefab();
+            CovenantEnemy gruntPrefab = MakeEnemyPrefab<GruntBehavior>("Grunt", grunt, plasmaPistol, dropPrefab, 48, 0, 2.6f, 12f, 0.9f);
+            CovenantEnemy jackalPrefab = MakeEnemyPrefab<JackalBehavior>("Jackal", jackal, plasmaPistol, dropPrefab, 75, 85, 2.3f, 16f, 0.9f);
+            CovenantEnemy brutePrefab = MakeEnemyPrefab<BruteBehavior>("Brute", brute, plasmaRifle, dropPrefab, 280, 0, 4.2f, 1.9f, 1.6f);
             EncounterDefinition encounterData = MakeEncounter(gruntPrefab, jackalPrefab, brutePrefab);
 
             GameObject player = new GameObject("Marine");
@@ -110,6 +114,7 @@ namespace Harvest.Editor
             marineArmor.HealthRegenPerSecond = 5f;
             MarineLoadout loadout = player.AddComponent<MarineLoadout>();
             loadout.Weapons = new[] { rifleData, shotgunData };
+            loadout.DropPrefab = dropPrefab;
             MarineController marine = player.AddComponent<MarineController>();
             GameObject view = new GameObject("Eyes");
             view.transform.SetParent(player.transform, false);
@@ -128,9 +133,14 @@ namespace Harvest.Editor
             shotgun.transform.SetParent(view.transform, false);
             shotgun.transform.localPosition = new Vector3(0.36f, -0.35f, 0.62f);
             Object.DestroyImmediate(shotgun.GetComponent<Collider>());
+            GameObject pistolModel = MakeViewModel("Plasma pistol silhouette", plasma, view.transform,
+                new Vector3(0.33f, -0.32f, 0.6f), new Vector3(0.22f, 0.19f, 0.35f));
+            GameObject rifleModel = MakeViewModel("Plasma rifle silhouette", plasmaRifleColor, view.transform,
+                new Vector3(0.36f, -0.32f, 0.75f), new Vector3(0.25f, 0.2f, 0.7f));
             WeaponView weaponView = view.AddComponent<WeaponView>();
             weaponView.Loadout = loadout;
-            weaponView.Models = new[] { rifle, shotgun };
+            weaponView.Definitions = new[] { rifleData, shotgunData, plasmaPistol, plasmaRifle };
+            weaponView.Models = new[] { rifle, shotgun, pistolModel, rifleModel };
 
             GameObject director = new GameObject("Encounter Director");
             HarvestEncounter encounter = director.AddComponent<HarvestEncounter>();
@@ -167,11 +177,20 @@ namespace Harvest.Editor
         }
 
         static WeaponDefinition MakeWeapon(string assetName, string displayName, int magazine, int reserve,
-            float damage, float shieldMultiplier, int pellets, float spread, float range, float interval, float reload, bool automatic)
+            float damage, float shieldMultiplier, int pellets, float spread, float range, float interval, float reload,
+            bool automatic, Material pickupMaterial)
         {
             string path = $"Assets/Harvest/Data/{assetName}.asset";
             WeaponDefinition weapon = AssetDatabase.LoadAssetAtPath<WeaponDefinition>(path);
-            if (weapon != null) return weapon;
+            if (weapon != null)
+            {
+                if (weapon.PickupMaterial == null)
+                {
+                    weapon.PickupMaterial = pickupMaterial;
+                    EditorUtility.SetDirty(weapon);
+                }
+                return weapon;
+            }
             weapon = ScriptableObject.CreateInstance<WeaponDefinition>();
             AssetDatabase.CreateAsset(weapon, path);
             weapon.DisplayName = displayName;
@@ -185,8 +204,66 @@ namespace Harvest.Editor
             weapon.FireInterval = interval;
             weapon.ReloadSeconds = reload;
             weapon.Automatic = automatic;
+            weapon.PickupMaterial = pickupMaterial;
             EditorUtility.SetDirty(weapon);
             return weapon;
+        }
+
+        static WeaponDefinition MakePlasmaWeapon(string name, float damage, float shieldMultiplier,
+            int energyCost, float interval, float speed, bool automatic, PlasmaBolt bolt, Material material)
+        {
+            string path = $"Assets/Harvest/Data/{name}.asset";
+            WeaponDefinition weapon = AssetDatabase.LoadAssetAtPath<WeaponDefinition>(path);
+            if (weapon != null) return weapon;
+            weapon = ScriptableObject.CreateInstance<WeaponDefinition>();
+            AssetDatabase.CreateAsset(weapon, path);
+            weapon.DisplayName = name.ToUpperInvariant();
+            weapon.ShotKind = WeaponShotKind.PlasmaBolt;
+            weapon.UsesEnergy = true;
+            weapon.EnergyCapacity = 100;
+            weapon.EnergyPerShot = energyCost;
+            weapon.DamagePerPellet = damage;
+            weapon.ShieldMultiplier = shieldMultiplier;
+            weapon.Pellets = 1;
+            weapon.SpreadDegrees = automatic ? 2f : 0.8f;
+            weapon.Range = 60f;
+            weapon.FireInterval = interval;
+            weapon.Automatic = automatic;
+            weapon.ProjectilePrefab = bolt;
+            weapon.ProjectileSpeed = speed;
+            weapon.PickupMaterial = material;
+            EditorUtility.SetDirty(weapon);
+            return weapon;
+        }
+
+        static DroppedWeapon MakeDropPrefab()
+        {
+            const string path = "Assets/Harvest/Prefabs/Dropped Weapon.prefab";
+            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existing != null) return existing.GetComponent<DroppedWeapon>();
+            GameObject root = new GameObject("Dropped Weapon");
+            SphereCollider trigger = root.AddComponent<SphereCollider>();
+            trigger.radius = 0.7f;
+            trigger.isTrigger = true;
+            DroppedWeapon drop = root.AddComponent<DroppedWeapon>();
+            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            visual.name = "Weapon silhouette";
+            visual.transform.SetParent(root.transform, false);
+            visual.transform.localScale = new Vector3(0.55f, 0.22f, 0.38f);
+            Object.DestroyImmediate(visual.GetComponent<Collider>());
+            drop.Visual = visual.GetComponent<Renderer>();
+            GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            return saved.GetComponent<DroppedWeapon>();
+        }
+
+        static GameObject MakeViewModel(string name, Material material, Transform parent, Vector3 position, Vector3 scale)
+        {
+            GameObject model = Block(name, material, Vector3.zero, scale);
+            model.transform.SetParent(parent, false);
+            model.transform.localPosition = position;
+            Object.DestroyImmediate(model.GetComponent<Collider>());
+            return model;
         }
 
         static PlasmaBolt MakeBoltPrefab(Material material)
@@ -205,13 +282,13 @@ namespace Harvest.Editor
             return saved.GetComponent<PlasmaBolt>();
         }
 
-        static CovenantEnemy MakeEnemyPrefab<T>(string name, Material material, PlasmaBolt bolt,
-            float health, float shield, float moveSpeed, float preferredRange, float attackInterval, float visualHeight)
+        static CovenantEnemy MakeEnemyPrefab<T>(string name, Material material, WeaponDefinition weapon, DroppedWeapon dropPrefab,
+            float health, float shield, float moveSpeed, float preferredRange, float visualHeight)
             where T : EnemyBehavior
         {
             string path = $"Assets/Harvest/Prefabs/{name}.prefab";
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (existing != null) return EnsureEnemyPrefab<T>(path);
+            if (existing != null) return EnsureEnemyPrefab<T>(path, weapon, dropPrefab);
             GameObject root = new GameObject(name);
             CharacterController controller = root.AddComponent<CharacterController>();
             bool isBrute = typeof(T) == typeof(BruteBehavior);
@@ -223,12 +300,10 @@ namespace Harvest.Editor
             T behavior = root.AddComponent<T>();
             behavior.MoveSpeed = moveSpeed;
             behavior.PreferredRange = preferredRange;
-            if (behavior is PlasmaBehavior plasmaBehavior)
-            {
-                plasmaBehavior.BoltPrefab = bolt;
-                plasmaBehavior.FireInterval = attackInterval;
-            }
-            if (behavior is BruteBehavior bruteBehavior) bruteBehavior.RecoverySeconds = attackInterval;
+            ActorWeapon enemyWeapon = root.AddComponent<ActorWeapon>();
+            enemyWeapon.Team = CombatTeam.Covenant;
+            enemyWeapon.StartingWeapon = weapon;
+            enemyWeapon.DropPrefab = dropPrefab;
             root.AddComponent<CovenantEnemy>();
             EnemyHealthBar bar = root.AddComponent<EnemyHealthBar>();
             bar.Height = isBrute ? 3.3f : 2.1f;
@@ -240,16 +315,31 @@ namespace Harvest.Editor
             visual.transform.localScale = isBrute ? new Vector3(1.4f, visualHeight, 1.4f) : new Vector3(0.9f, visualHeight, 0.9f);
             visual.GetComponent<Renderer>().sharedMaterial = material;
             Object.DestroyImmediate(visual.GetComponent<Collider>());
+            AddHeldWeapon(root, weapon, isBrute);
             if (behavior is JackalBehavior jackalBehavior) AddJackalShield(root, jackalBehavior);
             GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
             return saved.GetComponent<CovenantEnemy>();
         }
 
-        static CovenantEnemy EnsureEnemyPrefab<T>(string path) where T : EnemyBehavior
+        static CovenantEnemy EnsureEnemyPrefab<T>(string path, WeaponDefinition weapon, DroppedWeapon dropPrefab) where T : EnemyBehavior
         {
             GameObject root = PrefabUtility.LoadPrefabContents(path);
             bool changed = false;
+            ActorWeapon enemyWeapon = root.GetComponent<ActorWeapon>();
+            if (enemyWeapon == null)
+            {
+                enemyWeapon = root.AddComponent<ActorWeapon>();
+                changed = true;
+            }
+            if (enemyWeapon.Team != CombatTeam.Covenant) { enemyWeapon.Team = CombatTeam.Covenant; changed = true; }
+            if (enemyWeapon.StartingWeapon == null) { enemyWeapon.StartingWeapon = weapon; changed = true; }
+            if (enemyWeapon.DropPrefab == null) { enemyWeapon.DropPrefab = dropPrefab; changed = true; }
+            if (root.transform.Find("Held weapon") == null)
+            {
+                AddHeldWeapon(root, enemyWeapon.StartingWeapon, typeof(T) == typeof(BruteBehavior));
+                changed = true;
+            }
             if (root.GetComponent<EnemyHitFeedback>() == null)
             {
                 EnemyHitFeedback feedback = root.AddComponent<EnemyHitFeedback>();
@@ -285,6 +375,17 @@ namespace Harvest.Editor
             plate.GetComponent<Renderer>().sharedMaterial = MakeMaterial("Jackal Shield", new Color(0.13f, 0.77f, 1f), true);
             Object.DestroyImmediate(plate.GetComponent<Collider>());
             behavior.ShieldVisual = plate;
+        }
+
+        static void AddHeldWeapon(GameObject root, WeaponDefinition definition, bool isBrute)
+        {
+            GameObject model = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            model.name = "Held weapon";
+            model.transform.SetParent(root.transform, false);
+            model.transform.localPosition = isBrute ? new Vector3(0.85f, 0.25f, 0.55f) : new Vector3(0.45f, 0f, 0.5f);
+            model.transform.localScale = isBrute ? new Vector3(0.22f, 0.22f, 0.7f) : new Vector3(0.17f, 0.2f, 0.35f);
+            if (definition != null) model.GetComponent<Renderer>().sharedMaterial = definition.PickupMaterial;
+            Object.DestroyImmediate(model.GetComponent<Collider>());
         }
 
         static void CreateArmorPickup(Vector3 position, Material material, float amount)

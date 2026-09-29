@@ -3,38 +3,24 @@ using UnityEngine;
 
 namespace Harvest
 {
-    // Input and presentation can be replaced without changing weapon state or hit resolution.
+    // Player input around the shared WeaponInstance/WeaponRuntime path.
     public sealed class MarineLoadout : MonoBehaviour
     {
         public Camera View;
         public WeaponDefinition[] Weapons;
+        public DroppedWeapon DropPrefab;
         public event Action Changed;
         public event Action HitEnemy;
 
-        struct WeaponState
-        {
-            public int Magazine;
-            public int Reserve;
-            public float NextShot;
-            public float ReloadUntil;
-        }
-
-        WeaponState[] states;
+        WeaponInstance[] slots;
         int selected;
         Vitality vitality;
         HarvestEncounter encounter;
 
-        public WeaponDefinition Current => Weapons != null && Weapons.Length > selected ? Weapons[selected] : null;
+        public WeaponDefinition Current => Equipped?.Definition;
+        public WeaponInstance Equipped => slots != null && slots.Length > selected ? slots[selected] : null;
         public int SelectedIndex => selected;
-        public string AmmoText
-        {
-            get
-            {
-                if (Current == null || states == null) return "--";
-                WeaponState state = states[selected];
-                return state.ReloadUntil > Time.time ? "RELOADING" : $"{state.Magazine} / {state.Reserve}";
-            }
-        }
+        public string AmmoText => Equipped == null ? "--" : Equipped.AmmoText;
 
         void Awake()
         {
@@ -43,90 +29,98 @@ namespace Harvest
             ResetLoadout();
         }
 
+        void Start()
+        {
+            if (vitality != null) vitality.Died += DropEquippedOnDeath;
+        }
+
+        void OnDisable()
+        {
+            if (vitality != null) vitality.Died -= DropEquippedOnDeath;
+        }
+
+        void DropEquippedOnDeath()
+        {
+            if (Equipped == null || DropPrefab == null) return;
+            Vector3 position = transform.position;
+            position.y = 0.55f;
+            DroppedWeapon.Spawn(DropPrefab, Equipped, position);
+            slots[selected] = null;
+            Changed?.Invoke();
+        }
+
         public void ResetLoadout()
         {
             if (Weapons == null) return;
             selected = 0;
-            states = new WeaponState[Weapons.Length];
+            slots = new WeaponInstance[Weapons.Length];
             for (int i = 0; i < Weapons.Length; i++)
-            {
-                states[i].Magazine = Weapons[i].MagazineSize;
-                states[i].Reserve = Weapons[i].StartingReserve;
-            }
+                if (Weapons[i] != null) slots[i] = new WeaponInstance(Weapons[i]);
             Changed?.Invoke();
         }
 
         void Update()
         {
-            if (vitality == null || !vitality.IsAlive || (encounter != null && encounter.IsFinished) || Current == null) return;
+            if (vitality == null || !vitality.IsAlive || (encounter != null && encounter.IsFinished)) return;
             if (Input.GetKeyDown(KeyCode.Alpha1)) Select(0);
             if (Input.GetKeyDown(KeyCode.Alpha2)) Select(1);
             float scroll = Input.GetAxisRaw("Mouse ScrollWheel");
-            if (Mathf.Abs(scroll) > 0.01f && Weapons.Length > 1)
-                Select((selected + (scroll < 0f ? 1 : Weapons.Length - 1)) % Weapons.Length);
-            if (Input.GetKeyDown(KeyCode.R)) StartReload();
-            if (Cursor.lockState == CursorLockMode.Locked &&
-                (Current.Automatic ? Input.GetMouseButton(0) : Input.GetMouseButtonDown(0))) Fire();
-            for (int i = 0; i < states.Length; i++)
+            if (Mathf.Abs(scroll) > 0.01f && slots != null && slots.Length > 1)
+                Select((selected + (scroll < 0f ? 1 : slots.Length - 1)) % slots.Length);
+            if (Input.GetKeyDown(KeyCode.R) && Equipped != null && Equipped.BeginReload()) Changed?.Invoke();
+            if (Input.GetKeyDown(KeyCode.E)) TryPickup();
+            if (Cursor.lockState == CursorLockMode.Locked && Current != null &&
+                (Current.Automatic ? Input.GetMouseButton(0) : Input.GetMouseButtonDown(0)))
             {
-                WeaponState state = states[i];
-                if (state.ReloadUntil <= 0f || Time.time < state.ReloadUntil) continue;
-                WeaponDefinition definition = Weapons[i];
-                int amount = Mathf.Min(definition.MagazineSize - state.Magazine, state.Reserve);
-                state.Magazine += amount;
-                state.Reserve -= amount;
-                state.ReloadUntil = 0f;
-                states[i] = state;
-                Changed?.Invoke();
+                if (!Current.UsesEnergy && Equipped.Magazine <= 0 && Equipped.BeginReload()) Changed?.Invoke();
+                int before = Current.UsesEnergy ? Equipped.Energy : Equipped.Magazine;
+                bool hit = WeaponRuntime.Fire(Equipped, View.transform.position, View.transform.rotation, CombatTeam.Marine);
+                int after = Current.UsesEnergy ? Equipped.Energy : Equipped.Magazine;
+                if (before != after) Changed?.Invoke();
+                if (hit) HitEnemy?.Invoke();
+            }
+            if (slots == null) return;
+            foreach (WeaponInstance weapon in slots)
+            {
+                if (weapon == null) continue;
+                bool reloading = weapon.ReloadUntil > 0f;
+                weapon.Tick();
+                if (reloading && weapon.ReloadUntil <= 0f) Changed?.Invoke();
             }
         }
 
         void Select(int index)
         {
-            if (index < 0 || index >= Weapons.Length || index == selected) return;
+            if (slots == null || index < 0 || index >= slots.Length || index == selected) return;
             selected = index;
             Changed?.Invoke();
         }
 
-        void StartReload()
+        void TryPickup()
         {
-            WeaponState state = states[selected];
-            if (state.ReloadUntil > 0f || state.Magazine >= Current.MagazineSize || state.Reserve <= 0) return;
-            state.ReloadUntil = Time.time + Current.ReloadSeconds;
-            states[selected] = state;
-            Changed?.Invoke();
-        }
-
-        void Fire()
-        {
-            WeaponState state = states[selected];
-            if (Time.time < state.NextShot || state.ReloadUntil > 0f) return;
-            if (state.Magazine <= 0) { StartReload(); return; }
-            WeaponDefinition weapon = Current;
-            state.NextShot = Time.time + weapon.FireInterval;
-            state.Magazine--;
-            states[selected] = state;
-            Changed?.Invoke();
-            bool hitEnemy = false;
-            for (int i = 0; i < weapon.Pellets; i++)
+            if (slots == null || DropPrefab == null) return;
+            Collider[] nearby = Physics.OverlapSphere(transform.position, 2.5f, ~0, QueryTriggerInteraction.Collide);
+            DroppedWeapon closest = null;
+            float best = float.MaxValue;
+            foreach (Collider collider in nearby)
             {
-                Vector3 direction = View.transform.forward;
-                if (weapon.SpreadDegrees > 0f)
-                    direction = View.transform.rotation *
-                        (Quaternion.Euler(UnityEngine.Random.Range(-weapon.SpreadDegrees, weapon.SpreadDegrees),
-                            UnityEngine.Random.Range(-weapon.SpreadDegrees, weapon.SpreadDegrees), 0f) * Vector3.forward);
-                Ray ray = new Ray(View.transform.position, direction);
-                if (!Physics.Raycast(ray, out RaycastHit hit, weapon.Range, ~0, QueryTriggerInteraction.Ignore)) continue;
-                Vitality target = hit.collider.GetComponentInParent<Vitality>();
-                if (target == null || target == vitality) continue;
-                CovenantEnemy enemy = hit.collider.GetComponentInParent<CovenantEnemy>();
-                if (enemy != null)
-                    enemy.ReceiveWeaponHit(weapon.DamagePerPellet, weapon.ShieldMultiplier, View.transform.position);
-                else
-                    target.ApplyDamage(weapon.DamagePerPellet, weapon.ShieldMultiplier);
-                hitEnemy = true;
+                DroppedWeapon candidate = collider.GetComponentInParent<DroppedWeapon>();
+                if (candidate == null || !candidate.IsAvailable) continue;
+                float distance = (candidate.transform.position - transform.position).sqrMagnitude;
+                if (distance < best) { best = distance; closest = candidate; }
             }
-            if (hitEnemy) HitEnemy?.Invoke();
+            if (closest == null) return;
+            WeaponInstance taken = closest.Take();
+            if (taken == null) return;
+            WeaponInstance replaced = slots[selected];
+            slots[selected] = taken;
+            if (replaced != null)
+            {
+                Vector3 dropPosition = transform.position + transform.forward * 1.35f;
+                dropPosition.y = 0.55f;
+                DroppedWeapon.Spawn(DropPrefab, replaced, dropPosition);
+            }
+            Changed?.Invoke();
         }
     }
 }

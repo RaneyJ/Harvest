@@ -56,6 +56,7 @@ namespace Harvest
 
         void Die()
         {
+            GetComponent<ActorWeapon>()?.Drop();
             encounter?.EnemyKilled(this);
             Destroy(gameObject);
         }

@@ -38,7 +38,16 @@ namespace Harvest
                 SetTint(new Color(1f, 0.24f, 0.12f));
             if (phase == Phase.Approaching)
             {
-                if (distance > ChargeTriggerRange || !hasLineOfSight || Time.time < phaseUntil) return;
+                if (distance > ChargeTriggerRange)
+                {
+                    if (hasLineOfSight)
+                    {
+                        Vector3 muzzle = self.transform.position + Vector3.up * 1.6f;
+                        self.GetComponent<ActorWeapon>()?.TryFire(muzzle, (target.View.transform.position - muzzle).normalized);
+                    }
+                    return;
+                }
+                if (!hasLineOfSight || Time.time < phaseUntil) return;
                 phase = Phase.Windup;
                 phaseUntil = Time.time + WindupSeconds;
                 SetTint(new Color(1f, 0.24f, 0.12f));
