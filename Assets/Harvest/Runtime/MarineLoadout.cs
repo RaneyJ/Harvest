@@ -119,7 +119,11 @@ namespace Harvest
                 if (!Physics.Raycast(ray, out RaycastHit hit, weapon.Range, ~0, QueryTriggerInteraction.Ignore)) continue;
                 Vitality target = hit.collider.GetComponentInParent<Vitality>();
                 if (target == null || target == vitality) continue;
-                target.ApplyDamage(weapon.DamagePerPellet, weapon.ShieldMultiplier);
+                CovenantEnemy enemy = hit.collider.GetComponentInParent<CovenantEnemy>();
+                if (enemy != null)
+                    enemy.ReceiveWeaponHit(weapon.DamagePerPellet, weapon.ShieldMultiplier, View.transform.position);
+                else
+                    target.ApplyDamage(weapon.DamagePerPellet, weapon.ShieldMultiplier);
                 hitEnemy = true;
             }
             if (hitEnemy) HitEnemy?.Invoke();

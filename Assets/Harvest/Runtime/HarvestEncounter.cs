@@ -46,6 +46,12 @@ namespace Harvest
                 enabled = false;
                 return;
             }
+            if (Marine == null || Marine.GetComponent<MarineArmor>() == null)
+            {
+                Debug.LogError("The Line scene needs the marine armor update. Stop Play mode and choose Harvest > Build The Line Prototype.", this);
+                enabled = false;
+                return;
+            }
             Marine.TransferTo(names[0], MarineSpawn);
             StartCoroutine(BeginWave(0));
         }
@@ -71,6 +77,8 @@ namespace Harvest
         public void EnemyKilled(CovenantEnemy enemy)
         {
             alive.Remove(enemy);
+            foreach (CovenantEnemy survivor in alive)
+                if (survivor != null) survivor.GetComponent<GruntBehavior>()?.WitnessAllyDeath(enemy);
             StateChanged?.Invoke();
             if (alive.Count != 0 || transitioning || IsFinished) return;
             if (waveIndex + 1 < Definition.Waves.Length)

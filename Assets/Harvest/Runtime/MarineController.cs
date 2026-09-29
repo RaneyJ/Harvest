@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Harvest
 {
-    [RequireComponent(typeof(CharacterController), typeof(Vitality), typeof(MarineLoadout))]
+    [RequireComponent(typeof(CharacterController), typeof(Vitality), typeof(MarineLoadout), typeof(MarineArmor))]
     public sealed class MarineController : MonoBehaviour
     {
         public Camera View;
@@ -21,9 +21,9 @@ namespace Harvest
         {
             controller = GetComponent<CharacterController>();
             Vitality = GetComponent<Vitality>();
-            if (Vitality == null)
+            if (Vitality == null || GetComponent<MarineArmor>() == null)
             {
-                Debug.LogError("The Line scene needs updating. Stop Play mode and choose Harvest > Build The Line Prototype.", this);
+                Debug.LogError("The Line marine needs the armor update. Stop Play mode and choose Harvest > Build The Line Prototype.", this);
                 enabled = false;
                 return;
             }
@@ -44,6 +44,7 @@ namespace Harvest
             verticalVelocity = 0f;
             CallSign = callSign;
             Vitality.Restore();
+            GetComponent<MarineArmor>().ResetArmor();
             GetComponent<MarineLoadout>().ResetLoadout();
         }
 

@@ -36,7 +36,7 @@ namespace Harvest
             if (distance < 0.01f) return;
             Vector3 direction = delta / distance;
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * 6f);
-            Vector3 horizontal = distance > behavior.PreferredRange ? direction * behavior.MoveSpeed : Vector3.zero;
+            Vector3 horizontal = behavior.DesiredMovement(direction, distance);
             verticalVelocity = controller.isGrounded ? -2f : verticalVelocity + Physics.gravity.y * Time.deltaTime;
             controller.Move((horizontal + Vector3.up * verticalVelocity) * Time.deltaTime);
 
@@ -45,6 +45,13 @@ namespace Harvest
             bool visible = Physics.Raycast(origin, aim.normalized, out RaycastHit hit, aim.magnitude + 0.2f) &&
                 hit.collider.GetComponentInParent<MarineController>() == target;
             behavior.TryAttack(this, target, distance, visible);
+        }
+
+        public void ReceiveWeaponHit(float amount, float shieldMultiplier, Vector3 shotOrigin)
+        {
+            JackalBehavior jackal = behavior as JackalBehavior;
+            bool flank = jackal != null && jackal.IsFlanked(shotOrigin);
+            vitality.ApplyDamage(amount, shieldMultiplier, flank);
         }
 
         void Die()

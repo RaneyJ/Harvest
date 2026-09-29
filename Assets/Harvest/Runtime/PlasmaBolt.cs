@@ -18,7 +18,7 @@ namespace Harvest
             Vector3 step = Velocity * Time.deltaTime;
             if (Physics.Raycast(start, step.normalized, out RaycastHit hit, step.magnitude, ~0, QueryTriggerInteraction.Ignore))
             {
-                hit.collider.GetComponentInParent<MarineController>()?.Vitality.ApplyDamage(Damage);
+                hit.collider.GetComponentInParent<MarineArmor>()?.ApplyDamage(Damage);
                 Destroy(gameObject);
                 return;
             }

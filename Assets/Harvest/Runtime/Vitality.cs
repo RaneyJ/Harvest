@@ -17,6 +17,7 @@ namespace Harvest
         public event Action Changed;
         public event Action Died;
         public event Action ShieldBroken;
+        public event Action<bool, bool> Damaged; // shield hit, shield broken
 
         float lastDamageTime;
 
@@ -30,21 +31,35 @@ namespace Harvest
             Changed?.Invoke();
         }
 
-        public void ApplyDamage(float amount, float shieldMultiplier = 1f)
+        public void ApplyDamage(float amount, float shieldMultiplier = 1f, bool bypassShield = false)
         {
             if (!IsAlive || amount <= 0f) return;
             lastDamageTime = Time.time;
             float remaining = amount;
-            if (Shield > 0f && shieldMultiplier > 0f)
+            bool shieldHit = !bypassShield && Shield > 0f && shieldMultiplier > 0f;
+            bool brokeShield = false;
+            if (!bypassShield && Shield > 0f && shieldMultiplier > 0f)
             {
                 float absorbed = Mathf.Min(Shield, remaining * shieldMultiplier);
                 Shield -= absorbed;
                 remaining -= absorbed / shieldMultiplier;
-                if (Shield <= 0f) ShieldBroken?.Invoke();
+                if (Shield <= 0f)
+                {
+                    brokeShield = true;
+                    ShieldBroken?.Invoke();
+                }
             }
             Health = Mathf.Max(0f, Health - remaining);
             Changed?.Invoke();
+            Damaged?.Invoke(shieldHit, brokeShield);
             if (!IsAlive) Died?.Invoke();
+        }
+
+        public void Heal(float amount)
+        {
+            if (!IsAlive || amount <= 0f || Health >= MaxHealth) return;
+            Health = Mathf.Min(MaxHealth, Health + amount);
+            Changed?.Invoke();
         }
 
         void Update()

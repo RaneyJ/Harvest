@@ -9,6 +9,8 @@ namespace Harvest.Editor
     public static class BuildPrototype
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
+        const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
+        const string SceneVersion = "3";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -24,9 +26,10 @@ namespace Harvest.Editor
                 }
                 EncounterDefinition data = AssetDatabase.LoadAssetAtPath<EncounterDefinition>(EncounterPath);
                 bool sceneReferencesData = System.Array.IndexOf(AssetDatabase.GetDependencies(ScenePath), EncounterPath) >= 0;
-                if (data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
+                bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
+                if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the weapon and encounter data update. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing weapon and encounter assets are preserved.",
+                    "This scene predates the current combat and armor setup. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing weapon and encounter assets are preserved.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -52,6 +55,7 @@ namespace Harvest.Editor
             Material jackal = MakeMaterial("Jackal", new Color(0.25f, 0.55f, 0.78f), true);
             Material brute = MakeMaterial("Brute", new Color(0.29f, 0.25f, 0.26f));
             Material plasma = MakeMaterial("Plasma", new Color(0.4f, 0.15f, 0.85f), true);
+            Material armorMaterial = MakeMaterial("Armor Supply", new Color(0.24f, 0.67f, 0.49f), true);
             Material beacon = MakeMaterial("Evac Beacon", new Color(0.17f, 0.9f, 0.35f), true);
 
             Block("Field", soil, new Vector3(0, -0.55f, 10), new Vector3(130, 1, 150));
@@ -82,6 +86,8 @@ namespace Harvest.Editor
 
             GameObject evacuation = Block("Evacuation pad", concrete, new Vector3(0, 0.08f, -33), new Vector3(10, 0.16f, 8));
             Block("Evac beacon", beacon, new Vector3(0, 2.7f, -36), new Vector3(0.32f, 5.2f, 0.32f));
+            CreateArmorPickup(new Vector3(2f, 0.8f, -11f), armorMaterial, 80f);
+            CreateArmorPickup(new Vector3(-5f, 0.8f, 13f), armorMaterial, 80f);
             for (int i = 0; i < 3; i++) Smoke(new Vector3(-18 + i * 20, 0.3f, 40 + i * 10));
 
             WeaponDefinition rifleData = MakeWeapon("Service Rifle", "SERVICE RIFLE", 32, 128, 24f, 1f, 1, 0f, 90f, 0.12f, 1.8f, true);
@@ -98,6 +104,10 @@ namespace Harvest.Editor
             cc.height = 1.9f; cc.radius = 0.4f;
             Vitality playerVitality = player.AddComponent<Vitality>();
             playerVitality.MaxHealth = 100f;
+            MarineArmor marineArmor = player.AddComponent<MarineArmor>();
+            marineArmor.MaxArmor = 175f;
+            marineArmor.HealthRegenDelay = 7f;
+            marineArmor.HealthRegenPerSecond = 5f;
             MarineLoadout loadout = player.AddComponent<MarineLoadout>();
             loadout.Weapons = new[] { rifleData, shotgunData };
             MarineController marine = player.AddComponent<MarineController>();
@@ -129,6 +139,7 @@ namespace Harvest.Editor
             encounter.EvacuationPad = evacuation.transform;
             HarvestHud hud = director.AddComponent<HarvestHud>();
             hud.Marine = marine;
+            hud.Armor = marineArmor;
             hud.Loadout = loadout;
             hud.Encounter = encounter;
 
@@ -147,6 +158,7 @@ namespace Harvest.Editor
             camera.clearFlags = CameraClearFlags.SolidColor;
 
             EditorSceneManager.SaveScene(scene, ScenePath);
+            File.WriteAllText(SceneVersionPath, SceneVersion);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -199,7 +211,7 @@ namespace Harvest.Editor
         {
             string path = $"Assets/Harvest/Prefabs/{name}.prefab";
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (existing != null) return existing.GetComponent<CovenantEnemy>();
+            if (existing != null) return EnsureEnemyPrefab<T>(path);
             GameObject root = new GameObject(name);
             CharacterController controller = root.AddComponent<CharacterController>();
             bool isBrute = typeof(T) == typeof(BruteBehavior);
@@ -216,19 +228,77 @@ namespace Harvest.Editor
                 plasmaBehavior.BoltPrefab = bolt;
                 plasmaBehavior.FireInterval = attackInterval;
             }
-            if (behavior is BruteBehavior bruteBehavior) bruteBehavior.AttackInterval = attackInterval;
+            if (behavior is BruteBehavior bruteBehavior) bruteBehavior.RecoverySeconds = attackInterval;
             root.AddComponent<CovenantEnemy>();
             EnemyHealthBar bar = root.AddComponent<EnemyHealthBar>();
             bar.Height = isBrute ? 3.3f : 2.1f;
+            EnemyHitFeedback feedback = root.AddComponent<EnemyHitFeedback>();
+            feedback.LabelHeight = isBrute ? 3.7f : 2.5f;
             GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             visual.name = "Visual";
             visual.transform.SetParent(root.transform, false);
             visual.transform.localScale = isBrute ? new Vector3(1.4f, visualHeight, 1.4f) : new Vector3(0.9f, visualHeight, 0.9f);
             visual.GetComponent<Renderer>().sharedMaterial = material;
             Object.DestroyImmediate(visual.GetComponent<Collider>());
+            if (behavior is JackalBehavior jackalBehavior) AddJackalShield(root, jackalBehavior);
             GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
             return saved.GetComponent<CovenantEnemy>();
+        }
+
+        static CovenantEnemy EnsureEnemyPrefab<T>(string path) where T : EnemyBehavior
+        {
+            GameObject root = PrefabUtility.LoadPrefabContents(path);
+            bool changed = false;
+            if (root.GetComponent<EnemyHitFeedback>() == null)
+            {
+                EnemyHitFeedback feedback = root.AddComponent<EnemyHitFeedback>();
+                feedback.LabelHeight = typeof(T) == typeof(BruteBehavior) ? 3.7f : 2.5f;
+                changed = true;
+            }
+            if (root.GetComponent<JackalBehavior>() is JackalBehavior jackal && jackal.ShieldVisual == null)
+            {
+                AddJackalShield(root, jackal);
+                changed = true;
+            }
+            if (root.GetComponent<BruteBehavior>() is BruteBehavior brute && brute.ChargeTriggerRange <= 0f)
+            {
+                brute.ChargeTriggerRange = 14f;
+                brute.WindupSeconds = 0.85f;
+                brute.ChargeSeconds = 1.1f;
+                brute.ChargeSpeed = 8f;
+                brute.RecoverySeconds = 1.2f;
+                changed = true;
+            }
+            if (changed) PrefabUtility.SaveAsPrefabAsset(root, path);
+            PrefabUtility.UnloadPrefabContents(root);
+            return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<CovenantEnemy>();
+        }
+
+        static void AddJackalShield(GameObject root, JackalBehavior behavior)
+        {
+            GameObject plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            plate.name = "Front shield";
+            plate.transform.SetParent(root.transform, false);
+            plate.transform.localPosition = new Vector3(0f, 0.15f, 0.65f);
+            plate.transform.localScale = new Vector3(1.2f, 1.4f, 0.08f);
+            plate.GetComponent<Renderer>().sharedMaterial = MakeMaterial("Jackal Shield", new Color(0.13f, 0.77f, 1f), true);
+            Object.DestroyImmediate(plate.GetComponent<Collider>());
+            behavior.ShieldVisual = plate;
+        }
+
+        static void CreateArmorPickup(Vector3 position, Material material, float amount)
+        {
+            GameObject root = new GameObject("Armor supply");
+            root.transform.position = position;
+            SphereCollider trigger = root.AddComponent<SphereCollider>();
+            trigger.radius = 1.1f;
+            trigger.isTrigger = true;
+            ArmorPickup pickup = root.AddComponent<ArmorPickup>();
+            pickup.ArmorAmount = amount;
+            GameObject visual = Block("Armor pack", material, Vector3.zero, new Vector3(0.8f, 0.45f, 0.8f));
+            visual.transform.SetParent(root.transform, false);
+            Object.DestroyImmediate(visual.GetComponent<Collider>());
         }
 
         static EncounterDefinition MakeEncounter(CovenantEnemy grunt, CovenantEnemy jackal, CovenantEnemy brute)
