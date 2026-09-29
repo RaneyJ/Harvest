@@ -110,10 +110,14 @@ Rebuild with **Harvest > Build The Line Prototype**. Recoil defaults migrate onc
 
 ### Approved audio integration
 
-Scene version 14 adds approved service-rifle fire, Mosin hunting-rifle fire, service-rifle reload, and a quiet wind loop. Rebuild via **Harvest > Build The Line Prototype**. Shotgun, plasma, footsteps, impacts and explosions remain pending another audition; the unapproved pump-handling placeholder is not installed.
+Scene version 15 includes approved service-rifle fire, Mosin hunting-rifle fire, service-rifle reload, and a quiet wind loop. Rebuild via **Harvest > Build The Line Prototype**. The second audition adds Nova shotgun fire (02B), deep frag blast (05B), and isolated gravel/wood boot steps (06A/06B). Plasma and impact audio remain pending owner-selected sources; the unapproved pump-handling placeholder is not installed.
 
 WeaponDefinition exposes fire/reload clips and volumes; scene-owned CombatAudio subscribes to successful shot and reload events. Reload events belong to WeaponInstance, so player and NPC manual/empty-magazine reloads use the same path. Weapon swaps remove player reload listeners before transferring instances. Local weapon sounds use 2D playback, NPC fire uses positional audio with distance attenuation, and a bounded 32-voice pool prioritizes local feedback. Wind volume is editable on CombatAudio. Null clip slots stay silent and existing clip assignments are preserved on rebuild. Approved/ contains original source credits and licenses.
 
 Source/event checks, audio decode/headroom, file metadata and exact uploaded blob checks are performed here. Unity import, actual mixing/attenuation, reload/shot event timing and wind looping still require an Editor play test.
 
 Run **Harvest > Run Audio Event Checks (Play Mode)** to verify one firing event per trigger (including shotgun pellets), silent cooldown/reload failures, and one event per successful reload start. This command is not executed in this environment.
+
+FootstepAudio is independent of input and uses actual grounded planar travel for player and allied marines. Four gravel and five wood clips play individually, with no consecutive repetition and slight pitch variation. Walk/sprint/crouch stride and volume are editable; idle, airborne, death and teleport/handoff reset travel accumulation. NPC steps use positional audio. FootstepSurface tags farmhouse upper floors, landing and stairs as wood; other surfaces currently use gravel as the prototype's default bank. No walking loop is used.
+
+Frag detonation emits one positional presentation event before destroying the grenade, so its tail survives projectile removal in CombatAudio's shared pool. Explosion clip and volume belong to GrenadeDefinition; plasma stays silent until approved. Rebuild scene version 15 to migrate the existing allied-marine prefab and add surface tags. Source, isolated-contact boundaries, decoding/headroom and exact remote blob integrity were checked; Unity compilation, import, cadence/surface switching, and blast mixing still require an Editor play test.

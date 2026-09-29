@@ -21,6 +21,8 @@ namespace Harvest
         [Min(0f)] public float MaxPressure = 1.4f;
         [Range(0f, 1f)] public float CoveredDamageMultiplier = 0.25f;
         [Range(0f, 1f)] public float CoveredPressureMultiplier = 0.5f;
+        public AudioClip ExplosionSound;
+        [Range(0f, 1f)] public float ExplosionVolume = 0.8f;
         public Color BlastColor = new Color(1f, 0.55f, 0.12f);
     }
 }

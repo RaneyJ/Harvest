@@ -14,6 +14,7 @@ namespace Harvest
         AudioSource ambience;
         void OnEnable()
         {
+            GrenadeProjectile.ExplosionPresented += OnExplosion;
             WeaponRuntime.ShotPresented += OnShot;
             WeaponRuntime.ReloadPresented += OnReload;
             if (ambience == null) ambience = gameObject.AddComponent<AudioSource>();
@@ -23,6 +24,7 @@ namespace Harvest
         }
         void OnDisable()
         {
+            GrenadeProjectile.ExplosionPresented -= OnExplosion;
             WeaponRuntime.ShotPresented -= OnShot;
             WeaponRuntime.ReloadPresented -= OnReload;
             if (ambience != null) ambience.Stop();
@@ -31,10 +33,11 @@ namespace Harvest
         void OnShot(WeaponDefinition definition, Vector3 origin, Vector3 direction, CombatTeam team) =>
             Play(definition.FireSound, definition.FireVolume, origin);
         void OnReload(WeaponDefinition definition, Vector3 origin) => Play(definition.ReloadSound, definition.ReloadVolume, origin);
-        void Play(AudioClip clip, float volume, Vector3 origin)
+        void OnExplosion(GrenadeDefinition definition, Vector3 origin) => Play(definition.ExplosionSound, definition.ExplosionVolume, origin, true);
+        void Play(AudioClip clip, float volume, Vector3 origin, bool positional = false)
         {
             if (clip == null || volume <= 0f) return;
-            bool local = Player != null && Player.View != null && (Player.View.transform.position - origin).sqrMagnitude < 0.04f;
+            bool local = !positional && Player != null && Player.View != null && (Player.View.transform.position - origin).sqrMagnitude < 0.04f;
             AudioSource voice = voices.Find(source => !source.isPlaying);
             if (voice == null && voices.Count < Mathf.Max(4, MaximumVoices))
             {

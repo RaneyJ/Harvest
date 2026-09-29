@@ -5,6 +5,9 @@ namespace Harvest
     [RequireComponent(typeof(Rigidbody), typeof(SphereCollider))]
     public sealed class GrenadeProjectile : MonoBehaviour
     {
+        public static event System.Action<GrenadeDefinition, Vector3> ExplosionPresented;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetPresentation() => ExplosionPresented = null;
         public GrenadeDefinition Definition;
         public bool IsStuck { get; private set; }
         Rigidbody body;
@@ -103,6 +106,7 @@ namespace Harvest
             exploded = true;
             shell.enabled = false;
             GrenadeBlast.Apply(Definition, transform.position, team, owner);
+            ExplosionPresented?.Invoke(Definition, transform.position);
             if (Definition.ExplosionPrefab != null)
             {
                 GrenadeExplosionVisual visual = Instantiate(Definition.ExplosionPrefab, transform.position, Quaternion.identity);

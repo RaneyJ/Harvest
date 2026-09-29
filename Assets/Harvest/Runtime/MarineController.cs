@@ -55,6 +55,7 @@ namespace Harvest
             View.transform.localPosition = standingViewPosition;
             GetComponent<Suppression>().ResetPressure();
             transform.position = position;
+            GetComponent<FootstepAudio>()?.ResetStride();
             transform.rotation = Quaternion.identity;
             controller.enabled = true;
             pitch = 0f;

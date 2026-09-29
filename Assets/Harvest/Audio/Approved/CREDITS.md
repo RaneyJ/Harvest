@@ -14,3 +14,20 @@ https://opengameart.org/content/wind1
 CC0: https://creativecommons.org/publicdomain/zero/1.0/
 
 Rejected audition sounds are not included. The pump-action handling placeholder in 03B is not included; the approved rifle shot is used alone.
+
+## Second audition approvals
+
+02B ShotgunNova.ogg: Free Firearm Sound Library, Nova/O_17P.wav (authors above, CC0). Pitched down 10%, bass EQ, trimmed.
+
+05B FragDeepBlast.ogg: SamsterBirdies, Huge big explosion (CC0). Source is a layered, pitched firecracker recording. Filtered and trimmed to the approved 4.4-second excerpt.
+https://freesound.org/people/SamsterBirdies/sounds/591999/
+
+06A FootstepGravel1–4.ogg: Nox_Sound, Footsteps_Gravel_001 (CC0). Four individual walking contacts isolated from the approved excerpt, preserving variation and natural tails.
+https://freesound.org/people/Nox_Sound/sounds/530589/
+
+06B FootstepWood1–5.ogg: gpag1, Footsteps - boots on wood stage (CC0). Five individual contacts isolated, with short boundary fades.
+https://freesound.org/people/gpag1/sounds/392483/
+
+Freesound clips use the same publicly available compressed previews the user approved, converted to OGG. They are not original lossless source recordings. CC0 license verified from each source page on 2026-09-29.
+
+Plasma, armor, and shield audio remain unassigned pending the owner's search.

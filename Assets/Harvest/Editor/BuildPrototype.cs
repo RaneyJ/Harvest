@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "14";
+        const string SceneVersion = "15";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -89,6 +89,7 @@ namespace Harvest.Editor
             shotgunData.DamagePerPellet = Mathf.Max(20f, shotgunData.DamagePerPellet);
             EditorUtility.SetDirty(shotgunData);
             WeaponDefinition huntingRifle = MakeHuntingRifle(rust);
+            AssignApprovedAudio(shotgunData, "ShotgunNova", null);
             AssignApprovedAudio(rifleData, "ServiceRifle", "RifleReload");
             AssignApprovedAudio(huntingRifle, "HuntingRifleMosin", null);
             PlasmaBolt bolt = MakeBoltPrefab(plasma);
@@ -101,6 +102,8 @@ namespace Harvest.Editor
             ConfigureFeedback(plasmaRifle, 0.45f, 0.2f, 0.025f, 1.5f);
             GrenadeExplosionVisual explosion = MakeGrenadeExplosionPrefab();
             GrenadeDefinition fragData = MakeGrenade("Frag", GrenadeKind.Frag, human, explosion);
+            if (fragData.ExplosionSound == null) fragData.ExplosionSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/FragDeepBlast.ogg");
+            EditorUtility.SetDirty(fragData);
             GrenadeDefinition plasmaGrenadeData = MakeGrenade("Plasma", GrenadeKind.Plasma, plasma, explosion);
             CreateGrenadePickup(new Vector3(-2f, 0.55f, -18f), GrenadeKind.Frag, human);
             CreateGrenadePickup(new Vector3(2f, 0.55f, -18f), GrenadeKind.Plasma, plasma);
@@ -134,6 +137,7 @@ namespace Harvest.Editor
             loadout.Weapons = new[] { rifleData, shotgunData };
             loadout.DropPrefab = dropPrefab;
             MarineController marine = player.AddComponent<MarineController>();
+            ConfigureFootsteps(player);
             player.GetComponent<CombatTarget>().Team = CombatTeam.Marine;
             MarineCombatActions actions = player.AddComponent<MarineCombatActions>();
             GrenadeInventory grenades = player.GetComponent<GrenadeInventory>();
@@ -464,6 +468,15 @@ namespace Harvest.Editor
             }
             return changed;
         }
+        static void ConfigureFootsteps(GameObject actor)
+        {
+            FootstepAudio steps = actor.AddComponent<FootstepAudio>();
+            steps.Gravel = new AudioClip[4]; steps.Wood = new AudioClip[5];
+            for (int i = 0; i < steps.Gravel.Length; i++)
+                steps.Gravel[i] = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/FootstepGravel" + (i + 1) + ".ogg");
+            for (int i = 0; i < steps.Wood.Length; i++)
+                steps.Wood[i] = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/FootstepWood" + (i + 1) + ".ogg");
+        }
         static void AssignApprovedAudio(WeaponDefinition definition, string fire, string reload)
         {
             if (definition.FireSound == null) definition.FireSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/" + fire + ".ogg");
@@ -737,6 +750,7 @@ namespace Harvest.Editor
                 bool changed = false;
                 if (contents.GetComponent<Suppression>() == null) { contents.AddComponent<Suppression>(); changed = true; }
                 if (contents.GetComponent<MeleeAttack>() == null) { contents.AddComponent<MeleeAttack>(); changed = true; }
+                if (contents.GetComponent<FootstepAudio>() == null) { ConfigureFootsteps(contents); changed = true; }
                 if (changed) PrefabUtility.SaveAsPrefabAsset(contents, path);
                 PrefabUtility.UnloadPrefabContents(contents);
                 return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<AlliedMarine>();
@@ -766,6 +780,7 @@ namespace Harvest.Editor
             weapon.DropPrefab = drop;
             root.AddComponent<MeleeAttack>();
             AlliedMarine marine = root.AddComponent<AlliedMarine>();
+            ConfigureFootsteps(root);
             GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             visual.name = "Visual";
             visual.transform.SetParent(root.transform, false);

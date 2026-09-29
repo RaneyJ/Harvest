@@ -184,7 +184,10 @@ namespace Harvest.Editor
         static GameObject Part(GameObject root, string name, Material material, Vector3 position, Vector3 size)
         {
             GameObject part = Box(name, material, Vector3.zero, size);
-            part.transform.SetParent(root.transform, false); part.transform.localPosition = position; return part;
+            part.transform.SetParent(root.transform, false); part.transform.localPosition = position;
+            if (name.StartsWith("Upper ") || name.StartsWith("Stair tread "))
+                part.AddComponent<FootstepSurface>().Kind = FootstepSurfaceKind.Wood;
+            return part;
         }
         static GameObject Box(string name, Material material, Vector3 position, Vector3 size, bool collider = true)
         {
