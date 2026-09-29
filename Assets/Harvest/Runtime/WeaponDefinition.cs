@@ -1,0 +1,20 @@
+using UnityEngine;
+
+namespace Harvest
+{
+    [CreateAssetMenu(menuName = "Harvest/Weapon")]
+    public sealed class WeaponDefinition : ScriptableObject
+    {
+        public string DisplayName = "Rifle";
+        [Min(1)] public int MagazineSize = 32;
+        [Min(0)] public int StartingReserve = 128;
+        [Min(0f)] public float DamagePerPellet = 24f;
+        [Min(0f)] public float ShieldMultiplier = 1f;
+        [Min(1)] public int Pellets = 1;
+        [Min(0f)] public float SpreadDegrees;
+        [Min(1f)] public float Range = 90f;
+        [Min(0.01f)] public float FireInterval = 0.12f;
+        [Min(0.01f)] public float ReloadSeconds = 1.8f;
+        public bool Automatic = true;
+    }
+}

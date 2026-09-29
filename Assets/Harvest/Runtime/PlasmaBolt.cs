@@ -5,7 +5,7 @@ namespace Harvest
     public sealed class PlasmaBolt : MonoBehaviour
     {
         public Vector3 Velocity;
-        public int Damage = 15;
+        public float Damage = 15f;
         public float Lifetime = 4f;
         float expires;
 
@@ -18,7 +18,7 @@ namespace Harvest
             Vector3 step = Velocity * Time.deltaTime;
             if (Physics.Raycast(start, step.normalized, out RaycastHit hit, step.magnitude, ~0, QueryTriggerInteraction.Ignore))
             {
-                hit.collider.GetComponentInParent<MarineController>()?.TakeDamage(Damage);
+                hit.collider.GetComponentInParent<MarineController>()?.Vitality.ApplyDamage(Damage);
                 Destroy(gameObject);
                 return;
             }

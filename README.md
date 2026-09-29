@@ -5,31 +5,29 @@ An early, unofficial fan prototype about ordinary marines during the fighting on
 ## Open and play
 
 1. Install Unity **6.3 LTS** in Unity Hub with desktop build support. Open this repository as a Unity project. A newer 6.3 patch is fine; Unity may update `ProjectVersion.txt` locally.
-2. Allow scripts to compile. The editor creates `Assets/Harvest/Scenes/TheLine.unity` on first import and opens it. If it does not, choose **Harvest > Build The Line Prototype**. This command also rebuilds the scene after generator changes.
+2. Allow scripts to compile. On first import, the editor creates `Assets/Harvest/Scenes/TheLine.unity` and opens it. **If you already opened an earlier version, choose Harvest > Build The Line Prototype to update your scene.** Save or back up any manual scene edits first; the command rebuilds the graybox scene.
 3. Press Play. Click the Game view to capture the mouse. Escape releases it.
 
 | Control | Action |
 | --- | --- |
-| WASD | Move |
-| Mouse | Aim |
+| WASD / mouse | Move / aim |
 | Left mouse | Fire |
-| R | Reload |
-| Shift | Sprint |
-| Space | Jump |
+| 1 / 2 or scroll | Service rifle / combat shotgun |
+| R | Reload current weapon |
+| Shift / Space | Sprint / jump |
 
 Hold the road through two Covenant waves, then reach the marked evacuation pad. Death transfers control to another marine at the defense line. The three available lives are an opening-sequence device, not the eventual campaign rules.
 
-## Current slice
+## Combat and extension points
 
-- First-person CharacterController, hitscan rifle, magazine and reserve ammo, enemy shield/health split, and an on-screen HUD.
-- Grunts and a shielded Jackal advance and fire visible plasma bolts. The Brute closes to melee range. Cover blocks both rifle fire and plasma.
-- Two escalating waves, evacuation state, three named marines, failure and victory states.
-- A generated dusk farm road with cover, crop rows, freight structures, smoke columns, lighting and fog. Everything is made from Unity primitives for now.
+- `MarineController` handles movement and camera look. `MarineLoadout` handles weapon input and per-weapon magazine state. `WeaponDefinition` assets hold weapon values; add a definition to the loadout array to add a weapon. `WeaponView` chooses the matching visual model.
+- `Vitality` owns health, shield recharge, damage, and death events. Rifle and shotgun use the same damage path; the shotgun has more shield damage at short range.
+- Enemy prefabs combine `CovenantEnemy` movement/perception, `Vitality`, and one behavior (`GruntBehavior`, `JackalBehavior`, or `BruteBehavior`). Add a new behavior component for a new enemy role.
+- `EncounterDefinition` contains timed waves and spawn positions. `HarvestEncounter` runs that data and owns objective progression. `HarvestHud` and `EnemyHealthBar` subscribe to state changes for presentation.
+- `BuildPrototype` generates starter assets and the graybox scene. It **preserves existing weapon, encounter, material, and enemy prefab assets** on rebuild, so values edited in Unity remain intact. The scene itself is rebuilt.
 
-## Development notes
+The generated scene, prefabs, materials, and data assets should be committed after generation in the Editor. The code generator establishes defaults; those Unity assets become the editable source of truth for tuning. Runtime enemy spawning uses prefabs, not primitives.
 
-The generated scene is saved under `Assets/Harvest/Scenes/` and should be committed once generated in the Editor. The generator remains the source of truth for this initial graybox. Runtime components are deliberately separate from scene creation, so we can replace geometry and visuals without rewriting combat.
+This is still **single-player only**. Damage and encounter progression now have clear mutation points for a future host/server; responsive look and immediate local feedback can remain client-side. We will tune the combat before wiring networking.
 
-This is currently **single-player only**. The multiplayer pass should make encounter progression, damage, enemy decisions and spawn authority live on the host/server, while the local marine retains responsive look and firing feedback. We will test the combat feel before selecting the full networking implementation.
-
-No Unity Editor is available in the authoring environment, so this first commit has had source inspection but not an Editor import or play test. Please report any import error with the Unity Console output.
+No Unity Editor is available in the authoring environment, so the changes have had source inspection but not an Editor import or play test. Report any import error with the Unity Console output.

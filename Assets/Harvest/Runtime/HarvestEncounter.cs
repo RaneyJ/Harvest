@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -7,137 +8,112 @@ namespace Harvest
     public sealed class HarvestEncounter : MonoBehaviour
     {
         public MarineController Marine;
-        public Material GruntMaterial;
-        public Material JackalMaterial;
-        public Material BruteMaterial;
-        public Material PlasmaMaterial;
+        public EncounterDefinition Definition;
         public Transform EvacuationPad;
         public Vector3 MarineSpawn = new Vector3(0f, 1.2f, -21f);
+        public event Action StateChanged;
 
         readonly List<CovenantEnemy> alive = new List<CovenantEnemy>();
         readonly string[] names = { "Pvt. Vale", "Cpl. Neri", "Pvt. Solis" };
         int marineIndex;
-        int wave;
-        string message;
+        int waveIndex;
         bool transitioning;
         bool evacuating;
+
+        public string Status { get; private set; } = "HOLD THE ROAD";
+        public int Hostiles => alive.Count;
+        public int MarinesLeft => names.Length - marineIndex;
+        public bool IsEvacuating => evacuating;
         public bool IsFinished { get; private set; }
+
+        void OnEnable()
+        {
+            if (Marine != null) Marine.GetComponent<Vitality>().Died += MarineDied;
+        }
+
+        void OnDisable()
+        {
+            if (Marine != null) Marine.GetComponent<Vitality>().Died -= MarineDied;
+        }
 
         void Start()
         {
-            Marine.ResetMarine(names[0], MarineSpawn);
-            message = "HOLD THE ROAD";
-            StartCoroutine(BeginWave(1, 2f));
+            if (Definition == null || Definition.Waves == null || Definition.Waves.Length == 0)
+            {
+                Debug.LogError("The encounter needs at least one configured wave.", this);
+                enabled = false;
+                return;
+            }
+            Marine.TransferTo(names[0], MarineSpawn);
+            StartCoroutine(BeginWave(0));
         }
 
-        IEnumerator BeginWave(int number, float delay)
+        IEnumerator BeginWave(int index)
         {
             transitioning = true;
-            yield return new WaitForSeconds(delay);
+            EncounterWave wave = Definition.Waves[index];
+            yield return new WaitForSeconds(wave.DelaySeconds);
             if (IsFinished) yield break;
-            wave = number;
-            if (number == 1)
+            waveIndex = index;
+            foreach (EnemySpawn entry in wave.Enemies)
             {
-                Spawn(CovenantEnemy.Kind.Grunt, new Vector3(-6f, 1f, 24f));
-                Spawn(CovenantEnemy.Kind.Grunt, new Vector3(0f, 1f, 27f));
-                Spawn(CovenantEnemy.Kind.Grunt, new Vector3(6f, 1f, 24f));
-                message = "UNKNOWN HOSTILES — HOLD THE ROAD";
-            }
-            else
-            {
-                Spawn(CovenantEnemy.Kind.Grunt, new Vector3(-8f, 1f, 31f));
-                Spawn(CovenantEnemy.Kind.Grunt, new Vector3(8f, 1f, 31f));
-                Spawn(CovenantEnemy.Kind.Grunt, new Vector3(-3f, 1f, 34f));
-                Spawn(CovenantEnemy.Kind.Grunt, new Vector3(3f, 1f, 34f));
-                Spawn(CovenantEnemy.Kind.Jackal, new Vector3(-6f, 1f, 36f));
-                Spawn(CovenantEnemy.Kind.Brute, new Vector3(0f, 1.6f, 38f));
-                message = "THE LINE IS BROKEN — CLEAR A PATH";
+                if (entry == null || entry.Prefab == null) continue;
+                CovenantEnemy enemy = Instantiate(entry.Prefab, entry.Position, Quaternion.identity);
+                alive.Add(enemy);
             }
             transitioning = false;
-        }
-
-        void Spawn(CovenantEnemy.Kind kind, Vector3 position)
-        {
-            bool brute = kind == CovenantEnemy.Kind.Brute;
-            GameObject body = new GameObject();
-            body.name = brute ? "Brute" : kind == CovenantEnemy.Kind.Jackal ? "Jackal" : "Grunt";
-            body.transform.position = position;
-            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            visual.name = "Visual";
-            visual.transform.SetParent(body.transform, false);
-            visual.transform.localScale = brute ? new Vector3(1.4f, 1.6f, 1.4f) : new Vector3(0.9f, 0.9f, 0.9f);
-            visual.GetComponent<Renderer>().sharedMaterial = brute ? BruteMaterial : kind == CovenantEnemy.Kind.Jackal ? JackalMaterial : GruntMaterial;
-            Destroy(visual.GetComponent<Collider>());
-            CharacterController cc = body.AddComponent<CharacterController>();
-            cc.height = brute ? 3.2f : 2f;
-            cc.radius = brute ? 0.62f : 0.42f;
-            CovenantEnemy enemy = body.AddComponent<CovenantEnemy>();
-            enemy.Type = kind;
-            enemy.Health = brute ? 280 : kind == CovenantEnemy.Kind.Jackal ? 75 : 48;
-            enemy.Shield = kind == CovenantEnemy.Kind.Jackal ? 85 : 0;
-            enemy.MoveSpeed = brute ? 4.2f : 2.6f;
-            enemy.FireInterval = brute ? 1.2f : 1.8f;
-            enemy.BoltMaterial = PlasmaMaterial;
-            alive.Add(enemy);
+            SetStatus(wave.Callout);
+            if (alive.Count == 0) Debug.LogWarning("Wave has no configured enemies; the encounter cannot advance.", this);
         }
 
         public void EnemyKilled(CovenantEnemy enemy)
         {
             alive.Remove(enemy);
+            StateChanged?.Invoke();
             if (alive.Count != 0 || transitioning || IsFinished) return;
-            if (wave == 1) StartCoroutine(BeginWave(2, 4f));
+            if (waveIndex + 1 < Definition.Waves.Length)
+                StartCoroutine(BeginWave(waveIndex + 1));
             else
             {
                 evacuating = true;
-                message = "REACH THE EVACUATION PAD";
+                SetStatus(Definition.EvacuationCallout);
             }
         }
 
-        public void MarineDied()
+        void MarineDied()
         {
             if (!IsFinished) StartCoroutine(TransferMarine());
         }
 
         IEnumerator TransferMarine()
         {
-            message = $"{names[marineIndex]} — KIA";
+            SetStatus($"{names[marineIndex]} — KIA");
             yield return new WaitForSeconds(2.5f);
             marineIndex++;
             if (marineIndex >= names.Length)
             {
                 IsFinished = true;
-                message = "THE ROAD HAS FALLEN — PRESS PLAY TO RETRY";
+                SetStatus("THE ROAD HAS FALLEN — PRESS PLAY TO RETRY");
                 yield break;
             }
-            Marine.ResetMarine(names[marineIndex], MarineSpawn);
-            message = evacuating ? "REACH THE EVACUATION PAD" : "HOLD THE ROAD";
+            Marine.TransferTo(names[marineIndex], MarineSpawn);
+            SetStatus(evacuating ? Definition.EvacuationCallout : "HOLD THE ROAD");
         }
 
         void Update()
         {
-            if (!evacuating || IsFinished || !Marine.IsAlive) return;
+            if (!evacuating || IsFinished || !Marine.Vitality.IsAlive) return;
             if (Vector3.Distance(Marine.transform.position, EvacuationPad.position) < 3.5f)
             {
                 IsFinished = true;
-                message = "TRANSPORT AWAY — SURVIVORS ABOARD";
+                SetStatus("TRANSPORT AWAY — SURVIVORS ABOARD");
             }
         }
 
-        void OnGUI()
+        void SetStatus(string value)
         {
-            GUI.color = Color.white;
-            GUI.Box(new Rect(16, 16, 390, 86), $"{message}\n{Marine.CallSign}   |   MARINES LEFT: {names.Length - marineIndex}\nHOSTILES: {alive.Count}");
-            GUI.Box(new Rect(16, Screen.height - 94, 220, 72), $"HEALTH  {Marine.Health} / {Marine.MaxHealth}\nRIFLE  {Marine.AmmoText}");
-            if (!IsFinished && Marine.IsAlive)
-            {
-                float x = Screen.width * 0.5f;
-                float y = Screen.height * 0.5f;
-                GUI.color = Time.time < Marine.HitMarkerUntil ? Color.red : Color.white;
-                GUI.Label(new Rect(x - 8f, y - 12f, 30f, 30f), "+");
-            }
-            GUI.color = Color.white;
-            if (evacuating && !IsFinished)
-                GUI.Box(new Rect(Screen.width - 260, 16, 244, 45), "EVAC PAD: GREEN BEACON BEHIND LINE");
+            Status = value;
+            StateChanged?.Invoke();
         }
     }
 }

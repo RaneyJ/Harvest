@@ -26,6 +26,8 @@ namespace Harvest.Editor
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             Directory.CreateDirectory("Assets/Harvest/Scenes");
             Directory.CreateDirectory("Assets/Harvest/Materials");
+            Directory.CreateDirectory("Assets/Harvest/Prefabs");
+            Directory.CreateDirectory("Assets/Harvest/Data");
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             Material soil = MakeMaterial("Soil", new Color(0.29f, 0.24f, 0.17f));
@@ -70,10 +72,22 @@ namespace Harvest.Editor
             Block("Evac beacon", beacon, new Vector3(0, 2.7f, -36), new Vector3(0.32f, 5.2f, 0.32f));
             for (int i = 0; i < 3; i++) Smoke(new Vector3(-18 + i * 20, 0.3f, 40 + i * 10));
 
+            WeaponDefinition rifleData = MakeWeapon("Service Rifle", "SERVICE RIFLE", 32, 128, 24f, 1f, 1, 0f, 90f, 0.12f, 1.8f, true);
+            WeaponDefinition shotgunData = MakeWeapon("Combat Shotgun", "COMBAT SHOTGUN", 6, 24, 14f, 1.35f, 8, 6f, 22f, 0.75f, 2.3f, false);
+            PlasmaBolt bolt = MakeBoltPrefab(plasma);
+            CovenantEnemy gruntPrefab = MakeEnemyPrefab<GruntBehavior>("Grunt", grunt, bolt, 48, 0, 2.6f, 12f, 1.8f, 0.9f);
+            CovenantEnemy jackalPrefab = MakeEnemyPrefab<JackalBehavior>("Jackal", jackal, bolt, 75, 85, 2.3f, 16f, 2.1f, 0.9f);
+            CovenantEnemy brutePrefab = MakeEnemyPrefab<BruteBehavior>("Brute", brute, bolt, 280, 0, 4.2f, 1.9f, 1.2f, 1.6f);
+            EncounterDefinition encounterData = MakeEncounter(gruntPrefab, jackalPrefab, brutePrefab);
+
             GameObject player = new GameObject("Marine");
             player.transform.position = new Vector3(0, 1.2f, -21);
             CharacterController cc = player.AddComponent<CharacterController>();
             cc.height = 1.9f; cc.radius = 0.4f;
+            Vitality playerVitality = player.AddComponent<Vitality>();
+            playerVitality.MaxHealth = 100f;
+            MarineLoadout loadout = player.AddComponent<MarineLoadout>();
+            loadout.Weapons = new[] { rifleData, shotgunData };
             MarineController marine = player.AddComponent<MarineController>();
             GameObject view = new GameObject("Eyes");
             view.transform.SetParent(player.transform, false);
@@ -83,19 +97,28 @@ namespace Harvest.Editor
             camera.tag = "MainCamera";
             view.AddComponent<AudioListener>();
             marine.View = camera;
-            GameObject rifle = Block("Rifle silhouette", human, new Vector3(0, 0, 0), new Vector3(0.13f, 0.14f, 0.65f));
+            loadout.View = camera;
+            GameObject rifle = Block("Service rifle silhouette", human, new Vector3(0, 0, 0), new Vector3(0.13f, 0.14f, 0.65f));
             rifle.transform.SetParent(view.transform, false);
             rifle.transform.localPosition = new Vector3(0.36f, -0.33f, 0.7f);
             Object.DestroyImmediate(rifle.GetComponent<Collider>());
+            GameObject shotgun = Block("Combat shotgun silhouette", rust, new Vector3(0, 0, 0), new Vector3(0.18f, 0.19f, 0.48f));
+            shotgun.transform.SetParent(view.transform, false);
+            shotgun.transform.localPosition = new Vector3(0.36f, -0.35f, 0.62f);
+            Object.DestroyImmediate(shotgun.GetComponent<Collider>());
+            WeaponView weaponView = view.AddComponent<WeaponView>();
+            weaponView.Loadout = loadout;
+            weaponView.Models = new[] { rifle, shotgun };
 
             GameObject director = new GameObject("Encounter Director");
             HarvestEncounter encounter = director.AddComponent<HarvestEncounter>();
             encounter.Marine = marine;
-            encounter.GruntMaterial = grunt;
-            encounter.JackalMaterial = jackal;
-            encounter.BruteMaterial = brute;
-            encounter.PlasmaMaterial = plasma;
+            encounter.Definition = encounterData;
             encounter.EvacuationPad = evacuation.transform;
+            HarvestHud hud = director.AddComponent<HarvestHud>();
+            hud.Marine = marine;
+            hud.Loadout = loadout;
+            hud.Encounter = encounter;
 
             GameObject sun = new GameObject("Dusk sun");
             Light light = sun.AddComponent<Light>();
@@ -117,6 +140,113 @@ namespace Harvest.Editor
             AssetDatabase.Refresh();
             Selection.activeObject = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath);
             Debug.Log("The Line prototype is ready. Press Play, click the Game view, and hold the road.");
+        }
+
+        static WeaponDefinition MakeWeapon(string assetName, string displayName, int magazine, int reserve,
+            float damage, float shieldMultiplier, int pellets, float spread, float range, float interval, float reload, bool automatic)
+        {
+            string path = $"Assets/Harvest/Data/{assetName}.asset";
+            WeaponDefinition weapon = AssetDatabase.LoadAssetAtPath<WeaponDefinition>(path);
+            if (weapon != null) return weapon;
+            weapon = ScriptableObject.CreateInstance<WeaponDefinition>();
+            AssetDatabase.CreateAsset(weapon, path);
+            weapon.DisplayName = displayName;
+            weapon.MagazineSize = magazine;
+            weapon.StartingReserve = reserve;
+            weapon.DamagePerPellet = damage;
+            weapon.ShieldMultiplier = shieldMultiplier;
+            weapon.Pellets = pellets;
+            weapon.SpreadDegrees = spread;
+            weapon.Range = range;
+            weapon.FireInterval = interval;
+            weapon.ReloadSeconds = reload;
+            weapon.Automatic = automatic;
+            EditorUtility.SetDirty(weapon);
+            return weapon;
+        }
+
+        static PlasmaBolt MakeBoltPrefab(Material material)
+        {
+            string path = "Assets/Harvest/Prefabs/Plasma Bolt.prefab";
+            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existing != null) return existing.GetComponent<PlasmaBolt>();
+            GameObject root = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            root.name = "Plasma Bolt";
+            root.transform.localScale = Vector3.one * 0.26f;
+            Object.DestroyImmediate(root.GetComponent<Collider>());
+            root.GetComponent<Renderer>().sharedMaterial = material;
+            root.AddComponent<PlasmaBolt>();
+            GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            return saved.GetComponent<PlasmaBolt>();
+        }
+
+        static CovenantEnemy MakeEnemyPrefab<T>(string name, Material material, PlasmaBolt bolt,
+            float health, float shield, float moveSpeed, float preferredRange, float attackInterval, float visualHeight)
+            where T : EnemyBehavior
+        {
+            string path = $"Assets/Harvest/Prefabs/{name}.prefab";
+            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existing != null) return existing.GetComponent<CovenantEnemy>();
+            GameObject root = new GameObject(name);
+            CharacterController controller = root.AddComponent<CharacterController>();
+            bool isBrute = typeof(T) == typeof(BruteBehavior);
+            controller.height = isBrute ? 3.2f : 2f;
+            controller.radius = isBrute ? 0.62f : 0.42f;
+            Vitality vitality = root.AddComponent<Vitality>();
+            vitality.MaxHealth = health;
+            vitality.MaxShield = shield;
+            T behavior = root.AddComponent<T>();
+            behavior.MoveSpeed = moveSpeed;
+            behavior.PreferredRange = preferredRange;
+            if (behavior is PlasmaBehavior plasmaBehavior)
+            {
+                plasmaBehavior.BoltPrefab = bolt;
+                plasmaBehavior.FireInterval = attackInterval;
+            }
+            if (behavior is BruteBehavior bruteBehavior) bruteBehavior.AttackInterval = attackInterval;
+            root.AddComponent<CovenantEnemy>();
+            EnemyHealthBar bar = root.AddComponent<EnemyHealthBar>();
+            bar.Height = isBrute ? 3.3f : 2.1f;
+            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            visual.name = "Visual";
+            visual.transform.SetParent(root.transform, false);
+            visual.transform.localScale = isBrute ? new Vector3(1.4f, visualHeight, 1.4f) : new Vector3(0.9f, visualHeight, 0.9f);
+            visual.GetComponent<Renderer>().sharedMaterial = material;
+            Object.DestroyImmediate(visual.GetComponent<Collider>());
+            GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, path);
+            Object.DestroyImmediate(root);
+            return saved.GetComponent<CovenantEnemy>();
+        }
+
+        static EncounterDefinition MakeEncounter(CovenantEnemy grunt, CovenantEnemy jackal, CovenantEnemy brute)
+        {
+            const string path = "Assets/Harvest/Data/The Line.asset";
+            EncounterDefinition definition = AssetDatabase.LoadAssetAtPath<EncounterDefinition>(path);
+            if (definition != null) return definition;
+            definition = ScriptableObject.CreateInstance<EncounterDefinition>();
+            AssetDatabase.CreateAsset(definition, path);
+            definition.Waves = new[]
+            {
+                new EncounterWave
+                {
+                    Callout = "UNKNOWN HOSTILES — HOLD THE ROAD", DelaySeconds = 2f,
+                    Enemies = new[] { Spawn(grunt, -6, 24), Spawn(grunt, 0, 27), Spawn(grunt, 6, 24) }
+                },
+                new EncounterWave
+                {
+                    Callout = "THE LINE IS BROKEN — CLEAR A PATH", DelaySeconds = 4f,
+                    Enemies = new[] { Spawn(grunt, -8, 31), Spawn(grunt, 8, 31), Spawn(grunt, -3, 34),
+                        Spawn(grunt, 3, 34), Spawn(jackal, -6, 36), Spawn(brute, 0, 38) }
+                }
+            };
+            EditorUtility.SetDirty(definition);
+            return definition;
+        }
+
+        static EnemySpawn Spawn(CovenantEnemy prefab, float x, float z)
+        {
+            return new EnemySpawn { Prefab = prefab, Position = new Vector3(x, prefab.GetComponent<CharacterController>().height / 2f, z) };
         }
 
         static Material MakeMaterial(string name, Color color, bool glowing = false)
