@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "13";
+        const string SceneVersion = "14";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates weapon recoil and combat presentation polish. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
+                    "This scene predates the approved weapon and wind audio. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -89,6 +89,8 @@ namespace Harvest.Editor
             shotgunData.DamagePerPellet = Mathf.Max(20f, shotgunData.DamagePerPellet);
             EditorUtility.SetDirty(shotgunData);
             WeaponDefinition huntingRifle = MakeHuntingRifle(rust);
+            AssignApprovedAudio(rifleData, "ServiceRifle", "RifleReload");
+            AssignApprovedAudio(huntingRifle, "HuntingRifleMosin", null);
             PlasmaBolt bolt = MakeBoltPrefab(plasma);
             WeaponDefinition plasmaPistol = MakePlasmaWeapon("Plasma Pistol", 20f, 1.7f, 2, 0.55f, 17f, false, bolt, plasma);
             WeaponDefinition plasmaRifle = MakePlasmaWeapon("Plasma Rifle", 12f, 1.25f, 3, 0.13f, 22f, true, bolt, plasmaRifleColor);
@@ -179,6 +181,9 @@ namespace Harvest.Editor
             Material combatMaterial = MakeTracerMaterial();
             director.AddComponent<HitscanTracerRenderer>().TracerMaterial = combatMaterial;
             director.AddComponent<CombatEffects>().EffectMaterial = combatMaterial;
+            CombatAudio audio = director.AddComponent<CombatAudio>();
+            audio.Player = loadout;
+            audio.Wind = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/FieldWind.ogg");
             HarvestEncounter encounter = director.AddComponent<HarvestEncounter>();
             encounter.Marine = marine;
             encounter.Definition = encounterData;
@@ -458,6 +463,13 @@ namespace Harvest.Editor
                 changed = true;
             }
             return changed;
+        }
+        static void AssignApprovedAudio(WeaponDefinition definition, string fire, string reload)
+        {
+            if (definition.FireSound == null) definition.FireSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/" + fire + ".ogg");
+            if (reload != null && definition.ReloadSound == null)
+                definition.ReloadSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/" + reload + ".ogg");
+            EditorUtility.SetDirty(definition);
         }
         static void ConfigureFeedback(WeaponDefinition definition, float pitch, float yaw, float distance, float rotation)
         {

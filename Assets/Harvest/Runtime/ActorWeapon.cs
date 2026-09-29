@@ -14,9 +14,15 @@ namespace Harvest
         void Awake()
         {
             suppression = GetComponent<Suppression>();
-            if (StartingWeapon != null) Equipped = new WeaponInstance(StartingWeapon);
+            if (StartingWeapon != null)
+            {
+                Equipped = new WeaponInstance(StartingWeapon);
+                Equipped.ReloadStarted += OnReloadStarted;
+            }
         }
 
+        void OnDestroy() { if (Equipped != null) Equipped.ReloadStarted -= OnReloadStarted; }
+        void OnReloadStarted(WeaponInstance weapon) => WeaponRuntime.PresentReload(weapon.Definition, transform.position + Vector3.up);
         void Update() => Equipped?.Tick();
 
         public bool TryFire(Vector3 origin, Vector3 direction, float spreadDegrees = 0f)
@@ -30,6 +36,7 @@ namespace Harvest
         public void Drop()
         {
             if (Equipped == null || DropPrefab == null) return;
+            Equipped.ReloadStarted -= OnReloadStarted;
             Equipped.PrepareNpcDrop();
             DroppedWeapon.Spawn(DropPrefab, Equipped,
                 new Vector3(transform.position.x, 0.55f, transform.position.z));

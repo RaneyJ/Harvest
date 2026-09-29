@@ -11,8 +11,9 @@ namespace Harvest
         public static event System.Action<WeaponDefinition, Vector3, Vector3> HitscanFired;
         public static event System.Action<WeaponDefinition, Vector3, Vector3, CombatTeam> ShotPresented;
         public static event System.Action<Vector3, Vector3, CombatImpactKind> ImpactPresented;
+        public static event System.Action<WeaponDefinition, Vector3> ReloadPresented;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetPresentation() { HitscanFired = null; ShotPresented = null; ImpactPresented = null; }
+        static void ResetPresentation() { HitscanFired = null; ShotPresented = null; ImpactPresented = null; ReloadPresented = null; }
         public static bool Fire(WeaponInstance weapon, Vector3 origin, Quaternion aim, CombatTeam team, bool charged = false, Suppression shooter = null, bool aimingDownSights = false)
         {
             if (weapon == null || !weapon.TryConsumeShot(charged)) return false;
@@ -54,6 +55,8 @@ namespace Harvest
             if (exposures != null) Suppression.ApplyExposures(exposures);
             return hitOpponent;
         }
+
+        public static void PresentReload(WeaponDefinition definition, Vector3 origin) => ReloadPresented?.Invoke(definition, origin);
 
         public static void PresentImpact(RaycastHit hit, Vector3 origin)
         {

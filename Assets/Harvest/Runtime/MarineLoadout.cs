@@ -59,6 +59,7 @@ namespace Harvest
             Vector3 position = transform.position;
             position.y = 0.55f;
             DroppedWeapon.Spawn(DropPrefab, Equipped, position);
+            Equipped.ReloadStarted -= OnReloadStarted;
             slots[selected] = null;
             Changed?.Invoke();
         }
@@ -67,11 +68,16 @@ namespace Harvest
         {
             CancelCharge();
             aim?.CancelAim();
+            if (slots != null) foreach (WeaponInstance slot in slots) if (slot != null) slot.ReloadStarted -= OnReloadStarted;
             if (Weapons == null) return;
             selected = 0;
             slots = new WeaponInstance[Weapons.Length];
             for (int i = 0; i < Weapons.Length; i++)
-                if (Weapons[i] != null) slots[i] = new WeaponInstance(Weapons[i]);
+                if (Weapons[i] != null)
+                {
+                    slots[i] = new WeaponInstance(Weapons[i]);
+                    slots[i].ReloadStarted += OnReloadStarted;
+                }
             Changed?.Invoke();
         }
 
@@ -141,6 +147,10 @@ namespace Harvest
             if (hit) HitEnemy?.Invoke();
         }
 
+        void OnReloadStarted(WeaponInstance weapon)
+        {
+            if (weapon == Equipped) WeaponRuntime.PresentReload(weapon.Definition, View != null ? View.transform.position : transform.position);
+        }
         void CancelCharge() => chargingWeapon = null;
 
         void Select(int index)
@@ -171,6 +181,8 @@ namespace Harvest
             CancelCharge();
             aim?.CancelAim();
             WeaponInstance replaced = slots[selected];
+            if (replaced != null) replaced.ReloadStarted -= OnReloadStarted;
+            taken.ReloadStarted += OnReloadStarted;
             slots[selected] = taken;
             if (replaced != null)
             {

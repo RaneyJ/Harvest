@@ -6,6 +6,7 @@ namespace Harvest
     public sealed class WeaponInstance
     {
         public WeaponDefinition Definition { get; }
+        public event System.Action<WeaponInstance> ReloadStarted;
         public int Magazine { get; private set; }
         public int Reserve { get; private set; }
         public int Energy { get; private set; }
@@ -36,6 +37,7 @@ namespace Harvest
         {
             if (Definition.UsesEnergy || ReloadUntil > 0f || Magazine >= Definition.MagazineSize || Reserve <= 0) return false;
             ReloadUntil = Time.time + Definition.ReloadSeconds;
+            ReloadStarted?.Invoke(this);
             return true;
         }
 

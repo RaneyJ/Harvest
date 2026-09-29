@@ -26,6 +26,11 @@ namespace Harvest
         [Min(1f)] public float ProjectileSpeed = 17f;
         public Material PickupMaterial;
         [HideInInspector] public int FeedbackRevision;
+        [Header("Audio")]
+        public AudioClip FireSound;
+        public AudioClip ReloadSound;
+        [Range(0f, 1f)] public float FireVolume = 0.65f;
+        [Range(0f, 1f)] public float ReloadVolume = 0.4f;
         [Header("Weapon feedback")]
         [Min(0f)] public float RecoilPitch = 1.1f;
         [Min(0f)] public float RecoilYaw = 0.25f;

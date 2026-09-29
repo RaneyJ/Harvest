@@ -107,3 +107,13 @@ The first polish pass adds bounded camera recoil and model kick tuned per weapon
 Shared shot/impact events drive scene-owned pooled muzzle flashes and surface sparks for player and NPC weapons. Cover, marine armor, flesh, and shields have distinct colors; both hitscan and plasma impacts report the actual collision. Effects have a 96-instance cap and use no colliders or damage logic. The hipfire reticle expands with current spread, including suppression; ADS retains iron sights. Reload and bolt-cycle progress explain when the weapon can fire again.
 
 Rebuild with **Harvest > Build The Line Prototype**. Recoil defaults migrate once through WeaponDefinition.FeedbackRevision so subsequent tuning is retained. Feedback, tracer, aim, and damage systems remain separate. This is a visual/game-feel pass; final weapon art, authored sound, animation, environmental art and encounter pacing remain future polish work. Source/event ordering, recoil/recovery bounds, effect pool limits, metadata, and full uploaded blob integrity are checked here. Unity compilation, existing Play-mode regression commands, recoil feel, VFX rendering, and HUD presentation still require an Editor play test.
+
+### Approved audio integration
+
+Scene version 14 adds approved service-rifle fire, Mosin hunting-rifle fire, service-rifle reload, and a quiet wind loop. Rebuild via **Harvest > Build The Line Prototype**. Shotgun, plasma, footsteps, impacts and explosions remain pending another audition; the unapproved pump-handling placeholder is not installed.
+
+WeaponDefinition exposes fire/reload clips and volumes; scene-owned CombatAudio subscribes to successful shot and reload events. Reload events belong to WeaponInstance, so player and NPC manual/empty-magazine reloads use the same path. Weapon swaps remove player reload listeners before transferring instances. Local weapon sounds use 2D playback, NPC fire uses positional audio with distance attenuation, and a bounded 32-voice pool prioritizes local feedback. Wind volume is editable on CombatAudio. Null clip slots stay silent and existing clip assignments are preserved on rebuild. Approved/ contains original source credits and licenses.
+
+Source/event checks, audio decode/headroom, file metadata and exact uploaded blob checks are performed here. Unity import, actual mixing/attenuation, reload/shot event timing and wind looping still require an Editor play test.
+
+Run **Harvest > Run Audio Event Checks (Play Mode)** to verify one firing event per trigger (including shotgun pellets), silent cooldown/reload failures, and one event per successful reload start. This command is not executed in this environment.
