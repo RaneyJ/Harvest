@@ -11,6 +11,8 @@ namespace Harvest
         public DroppedWeapon DropPrefab;
         public event Action Changed;
         public event Action HitEnemy;
+        public event Action ShotFired;
+        PrecisionAim aim;
 
         WeaponInstance[] slots;
         int selected;
@@ -35,6 +37,7 @@ namespace Harvest
             suppression = GetComponent<Suppression>();
             actions = GetComponent<MarineCombatActions>();
             encounter = FindFirstObjectByType<HarvestEncounter>();
+            aim = GetComponent<PrecisionAim>();
             ResetLoadout();
         }
 
@@ -63,6 +66,7 @@ namespace Harvest
         public void ResetLoadout()
         {
             CancelCharge();
+            aim?.CancelAim();
             if (Weapons == null) return;
             selected = 0;
             slots = new WeaponInstance[Weapons.Length];
@@ -85,6 +89,7 @@ namespace Harvest
                 Select((selected + (scroll < 0f ? 1 : slots.Length - 1)) % slots.Length);
             if (Input.GetKeyDown(KeyCode.R) && Equipped != null && Equipped.BeginReload()) Changed?.Invoke();
             if (Input.GetKeyDown(KeyCode.E)) TryPickup();
+            if (aim == null) aim = GetComponent<PrecisionAim>();
             HandleFireInput();
             if (slots == null) return;
             foreach (WeaponInstance weapon in slots)
@@ -130,9 +135,9 @@ namespace Harvest
             if (!Current.UsesEnergy && Equipped.Magazine <= 0 && Equipped.BeginReload()) Changed?.Invoke();
             int before = Current.UsesEnergy ? Equipped.Energy : Equipped.Magazine;
             bool hit = WeaponRuntime.Fire(Equipped, View.transform.position, View.transform.rotation,
-                CombatTeam.Marine, charged, suppression);
+                CombatTeam.Marine, charged, suppression, aim != null && aim.IsAiming);
             int after = Current.UsesEnergy ? Equipped.Energy : Equipped.Magazine;
-            if (before != after) Changed?.Invoke();
+            if (before != after) { Changed?.Invoke(); ShotFired?.Invoke(); }
             if (hit) HitEnemy?.Invoke();
         }
 
@@ -142,6 +147,7 @@ namespace Harvest
         {
             if (slots == null || index < 0 || index >= slots.Length || index == selected) return;
             CancelCharge();
+            aim?.CancelAim();
             selected = index;
             Changed?.Invoke();
         }
@@ -163,6 +169,7 @@ namespace Harvest
             WeaponInstance taken = closest.Take();
             if (taken == null) return;
             CancelCharge();
+            aim?.CancelAim();
             WeaponInstance replaced = slots[selected];
             slots[selected] = taken;
             if (replaced != null)

@@ -89,3 +89,13 @@ Rebuild with **Harvest > Build The Line Prototype** for the refined farm scene: 
 Rifle and shotgun hitscan shots emit visible fading lines for player and NPC weapons, including misses and each shotgun pellet. Lines stop at the actual raycast endpoint. Plasma bolts retain their projectile visuals. WeaponDefinition exposes tracer visibility, color, width, and lifetime; the scene-owned HitscanTracerRenderer pools up to 128 lines and receives shot events independently of damage resolution. Tracers consume no additional ammo and apply no additional damage or suppression.
 
 Source, upload integrity, and geometric checks are performed here; Unity compilation, upstairs movement/NavMesh connectivity, window firing, scene appearance, and tracer rendering still require an Editor play test.
+
+### Civilian precision weapons
+
+The farmhouse upstairs has a hunting rifle pickup; press E to exchange it for the selected weapon. The civilian rifle has a wood stock, iron sights, a visible bolt cycle, five rounds plus 20 reserve, 90 body damage, a 1.4-second firing interval, and a 3.2-second reload. It uses the shared weapon/ammo/drop/tracer systems and keeps the two-slot loadout.
+
+Hold **right mouse** to aim a precision weapon. ADS centers the iron sights and narrows the FOV to 42 degrees. Any damaging hit, including an armor hit, immediately exits ADS; release right mouse and press again to resume. Switching, pickups, reloading, sprinting, melee/grenades, death, handoff, or losing cursor lock also exit aim. Suppression still builds and affects screen feedback, but adds spread only to hipfire. ADS uses the weapon's independent aimed spread (zero for this rifle).
+
+Precision hits to the configured upper capsule head region kill unshielded Covenant targets, in ADS or hipfire. Active shields prevent the bonus, including the shot that breaks them; Brutes always take normal damage. Graybox head silhouettes mark the region. PrecisionHitRegion can later be replaced with authored model hit zones. WeaponDefinition holds precision/aim tuning, PrecisionAim handles input and camera feedback, and WeaponRuntime resolves accuracy and hits.
+
+Shotgun damage rises from 14 to at least 20 per pellet on rebuild; frag friction rises to 0.85 dynamic / 0.95 static with Maximum friction combination, retaining the reduced bounce. Rebuild using **Harvest > Build The Line Prototype**. **Harvest > Run Precision Checks (Play Mode)** covers shared fire, ADS/hipfire suppression spread, body/head hits, shields, Brute exception, cooldown/ammo, hit interruption and input release. Source and numerical checks are performed here; Unity compilation, runtime regression checks, iron-sight alignment, pickup, and grenade friction still need an Editor play test.

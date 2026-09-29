@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "11";
+        const string SceneVersion = "12";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the farmhouse, terrain, and hitscan tracers. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
+                    "This scene predates the hunting rifle and precision aiming. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -85,7 +85,10 @@ namespace Harvest.Editor
             for (int i = 0; i < 3; i++) Smoke(new Vector3(-18 + i * 20, 0.3f, 40 + i * 10));
 
             WeaponDefinition rifleData = MakeWeapon("Service Rifle", "SERVICE RIFLE", 32, 128, 24f, 1f, 1, 0f, 90f, 0.12f, 1.8f, true, human);
-            WeaponDefinition shotgunData = MakeWeapon("Combat Shotgun", "COMBAT SHOTGUN", 6, 24, 14f, 1.35f, 8, 6f, 22f, 0.75f, 2.3f, false, rust);
+            WeaponDefinition shotgunData = MakeWeapon("Combat Shotgun", "COMBAT SHOTGUN", 6, 24, 20f, 1.35f, 8, 6f, 22f, 0.75f, 2.3f, false, rust);
+            shotgunData.DamagePerPellet = Mathf.Max(20f, shotgunData.DamagePerPellet);
+            EditorUtility.SetDirty(shotgunData);
+            WeaponDefinition huntingRifle = MakeHuntingRifle(rust);
             PlasmaBolt bolt = MakeBoltPrefab(plasma);
             WeaponDefinition plasmaPistol = MakePlasmaWeapon("Plasma Pistol", 20f, 1.7f, 2, 0.55f, 17f, false, bolt, plasma);
             WeaponDefinition plasmaRifle = MakePlasmaWeapon("Plasma Rifle", 12f, 1.25f, 3, 0.13f, 22f, true, bolt, plasmaRifleColor);
@@ -97,6 +100,10 @@ namespace Harvest.Editor
             CreateGrenadePickup(new Vector3(4f, 0.55f, 3f), GrenadeKind.Frag, human);
             CreateGrenadePickup(new Vector3(-4f, 0.55f, 14f), GrenadeKind.Plasma, plasma);
             DroppedWeapon dropPrefab = MakeDropPrefab();
+            GameObject huntingSupply = (GameObject)PrefabUtility.InstantiatePrefab(dropPrefab.gameObject);
+            huntingSupply.name = "Farmhouse hunting rifle supply";
+            huntingSupply.transform.position = new Vector3(-15f, 3.75f, -1f);
+            huntingSupply.AddComponent<WeaponSupply>().Definition = huntingRifle;
             CovenantEnemy gruntPrefab = MakeEnemyPrefab<GruntBehavior>("Grunt", grunt, plasmaPistol, dropPrefab, 48, 0, 2.6f, 12f, 0.9f);
             CovenantEnemy jackalPrefab = MakeEnemyPrefab<JackalBehavior>("Jackal", jackal, plasmaPistol, dropPrefab, 75, 85, 2.3f, 16f, 0.9f);
             CovenantEnemy brutePrefab = MakeEnemyPrefab<BruteBehavior>("Brute", brute, plasmaRifle, dropPrefab, 280, 0, 4.2f, 1.9f, 1.6f);
@@ -138,6 +145,8 @@ namespace Harvest.Editor
             marine.View = camera;
             loadout.View = camera;
             actions.View = camera;
+            PrecisionAim precisionAim = player.AddComponent<PrecisionAim>();
+            precisionAim.View = camera;
             PlayerDamageFeedback feedback = view.AddComponent<PlayerDamageFeedback>();
             feedback.Armor = marineArmor;
             feedback.View = camera;
@@ -153,11 +162,12 @@ namespace Harvest.Editor
                 new Vector3(0.33f, -0.32f, 0.6f), new Vector3(0.22f, 0.19f, 0.35f));
             GameObject rifleModel = MakeViewModel("Plasma rifle silhouette", plasmaRifleColor, view.transform,
                 new Vector3(0.36f, -0.32f, 0.75f), new Vector3(0.25f, 0.2f, 0.7f));
+            GameObject hunterModel = MakeHuntingModel(view.transform, rust, concrete);
             WeaponView weaponView = view.AddComponent<WeaponView>();
             weaponView.Loadout = loadout;
             weaponView.Melee = player.GetComponent<MeleeAttack>();
-            weaponView.Definitions = new[] { rifleData, shotgunData, plasmaPistol, plasmaRifle };
-            weaponView.Models = new[] { rifle, shotgun, pistolModel, rifleModel };
+            weaponView.Definitions = new[] { rifleData, shotgunData, plasmaPistol, plasmaRifle, huntingRifle };
+            weaponView.Models = new[] { rifle, shotgun, pistolModel, rifleModel, hunterModel };
 
             GameObject director = new GameObject("Encounter Director");
             director.AddComponent<HitscanTracerRenderer>().TracerMaterial = MakeTracerMaterial();
@@ -334,6 +344,7 @@ namespace Harvest.Editor
             root.AddComponent<CovenantEnemy>();
             root.AddComponent<CombatTarget>().Team = CombatTeam.Covenant;
             root.AddComponent<Suppression>();
+            EnsurePrecisionRegion(root, isBrute, material);
             EnemyHealthBar bar = root.AddComponent<EnemyHealthBar>();
             bar.Height = isBrute ? 3.3f : 2.1f;
             EnemyHitFeedback feedback = root.AddComponent<EnemyHitFeedback>();
@@ -354,7 +365,7 @@ namespace Harvest.Editor
         static CovenantEnemy EnsureEnemyPrefab<T>(string path, WeaponDefinition weapon, DroppedWeapon dropPrefab) where T : EnemyBehavior
         {
             GameObject root = PrefabUtility.LoadPrefabContents(path);
-            bool changed = false;
+            bool changed = EnsurePrecisionRegion(root, typeof(T) == typeof(BruteBehavior), root.GetComponentInChildren<Renderer>()?.sharedMaterial);
             CombatTarget target = root.GetComponent<CombatTarget>();
             if (target == null) { target = root.AddComponent<CombatTarget>(); changed = true; }
             if (target.Team != CombatTeam.Covenant) { target.Team = CombatTeam.Covenant; changed = true; }
@@ -421,6 +432,66 @@ namespace Harvest.Editor
             Object.DestroyImmediate(model.GetComponent<Collider>());
         }
 
+        static bool EnsurePrecisionRegion(GameObject root, bool isBrute, Material material)
+        {
+            bool changed = false;
+            PrecisionHitRegion region = root.GetComponent<PrecisionHitRegion>();
+            if (region == null) { region = root.AddComponent<PrecisionHitRegion>(); region.AllowsInstantHeadshot = !isBrute; changed = true; }
+            if (root.transform.Find("Head silhouette") == null)
+            {
+                CharacterController controller = root.GetComponent<CharacterController>();
+                GameObject head = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                head.name = "Head silhouette";
+                head.transform.SetParent(root.transform, false);
+                head.transform.localPosition = controller.center + Vector3.up * (controller.height * 0.34f);
+                head.transform.localScale = Vector3.one * (isBrute ? 0.65f : 0.5f);
+                if (material != null) head.GetComponent<Renderer>().sharedMaterial = material;
+                Object.DestroyImmediate(head.GetComponent<Collider>());
+                changed = true;
+            }
+            return changed;
+        }
+        static WeaponDefinition MakeHuntingRifle(Material stock)
+        {
+            const string path = "Assets/Harvest/Data/Hunting Rifle.asset";
+            WeaponDefinition definition = AssetDatabase.LoadAssetAtPath<WeaponDefinition>(path);
+            if (definition != null) return definition;
+            definition = ScriptableObject.CreateInstance<WeaponDefinition>();
+            definition.DisplayName = "HUNTING RIFLE";
+            definition.IsPrecision = true;
+            definition.Automatic = false;
+            definition.MagazineSize = 5;
+            definition.StartingReserve = 20;
+            definition.DamagePerPellet = 90f;
+            definition.FireInterval = 1.4f;
+            definition.ReloadSeconds = 3.2f;
+            definition.SpreadDegrees = 1.8f;
+            definition.Range = 150f;
+            definition.AdsSpreadDegrees = 0f;
+            definition.AdsFieldOfView = 42f;
+            definition.AdsModelPosition = new Vector3(0f, -0.085f, 0.65f);
+            definition.PickupMaterial = stock;
+            AssetDatabase.CreateAsset(definition, path);
+            return definition;
+        }
+        static GameObject MakeHuntingModel(Transform view, Material stock, Material metal)
+        {
+            GameObject root = new GameObject("Civilian bolt-action hunting rifle");
+            root.transform.SetParent(view, false);
+            root.transform.localPosition = new Vector3(0.32f, -0.3f, 0.65f);
+            HuntingPart(root.transform, "Wood stock", stock, new Vector3(0f, -0.035f, -0.1f), new Vector3(0.1f, 0.12f, 0.65f));
+            HuntingPart(root.transform, "Barrel", metal, new Vector3(0f, 0.02f, 0.4f), new Vector3(0.04f, 0.04f, 0.65f));
+            HuntingPart(root.transform, "Bolt", metal, new Vector3(0.065f, 0.025f, 0f), new Vector3(0.06f, 0.04f, 0.1f));
+            HuntingPart(root.transform, "Front iron sight", metal, new Vector3(0f, 0.07f, 0.68f), new Vector3(0.015f, 0.035f, 0.015f));
+            for (int side = -1; side <= 1; side += 2)
+                HuntingPart(root.transform, "Rear sight", metal, new Vector3(side * 0.024f, 0.07f, 0.1f), new Vector3(0.015f, 0.035f, 0.03f));
+            return root;
+        }
+        static void HuntingPart(Transform parent, string name, Material material, Vector3 position, Vector3 size)
+        {
+            GameObject part = MakeViewModel(name, material, parent, position, size);
+        }
+
         static GrenadeDefinition MakeGrenade(string name, GrenadeKind kind, Material material, GrenadeExplosionVisual explosion)
         {
             PhysicsMaterial physics = MakeGrenadePhysics(name, kind);
@@ -479,14 +550,18 @@ namespace Harvest.Editor
                 {
                     existing.bounciness = 0.22f;
                     existing.bounceCombine = PhysicsMaterialCombine.Average;
+                    existing.dynamicFriction = 0.85f;
+                    existing.staticFriction = 0.95f;
+                    existing.frictionCombine = PhysicsMaterialCombine.Maximum;
                     EditorUtility.SetDirty(existing);
                 }
                 return existing;
             }
             PhysicsMaterial material = new PhysicsMaterial(name + " Grenade Bounce");
             material.bounciness = kind == GrenadeKind.Frag ? 0.22f : 0.1f;
-            material.dynamicFriction = 0.45f;
-            material.staticFriction = 0.5f;
+            material.dynamicFriction = kind == GrenadeKind.Frag ? 0.85f : 0.45f;
+            material.staticFriction = kind == GrenadeKind.Frag ? 0.95f : 0.5f;
+            material.frictionCombine = kind == GrenadeKind.Frag ? PhysicsMaterialCombine.Maximum : PhysicsMaterialCombine.Average;
             material.bounceCombine = kind == GrenadeKind.Frag ? PhysicsMaterialCombine.Average : PhysicsMaterialCombine.Maximum;
             AssetDatabase.CreateAsset(material, path);
             return material;

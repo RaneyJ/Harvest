@@ -10,10 +10,14 @@ namespace Harvest
         public GameObject[] Models;
         public MeleeAttack Melee;
         Vector3[] positions;
+        PrecisionAim aim;
+        float shotStarted = float.NegativeInfinity;
         float swingStarted = float.NegativeInfinity;
 
         void Start()
         {
+            aim = Loadout.GetComponent<PrecisionAim>();
+            Loadout.ShotFired += BeginBoltCycle;
             positions = new Vector3[Models.Length];
             for (int i = 0; i < Models.Length; i++)
                 if (Models[i] != null) positions[i] = Models[i].transform.localPosition;
@@ -24,13 +28,14 @@ namespace Harvest
 
         void OnDisable()
         {
-            if (Loadout != null) Loadout.Changed -= Refresh;
+            if (Loadout != null) { Loadout.Changed -= Refresh; Loadout.ShotFired -= BeginBoltCycle; }
             if (Melee != null) Melee.Swing -= BeginSwing;
             if (positions != null)
                 for (int i = 0; i < Models.Length; i++)
                     if (Models[i] != null) Models[i].transform.localPosition = positions[i];
         }
 
+        void BeginBoltCycle() { if (Loadout.Current != null && Loadout.Current.IsPrecision) shotStarted = Time.time; }
         void BeginSwing() => swingStarted = Time.time;
         void LateUpdate()
         {
@@ -38,8 +43,19 @@ namespace Harvest
             float t = Mathf.Clamp01((Time.time - swingStarted) / 0.3f);
             float thrust = Mathf.Sin(t * Mathf.PI) * 0.18f;
             for (int i = 0; i < Models.Length; i++)
-                if (Models[i] != null) Models[i].transform.localPosition = positions[i] +
-                    Vector3.forward * (Models[i].activeSelf ? thrust : 0f);
+            {
+                if (Models[i] == null) continue;
+                Vector3 rest = positions[i];
+                if (aim != null && Loadout.Current != null && Loadout.Current.IsPrecision && Models[i].activeSelf)
+                    rest = Vector3.Lerp(rest, Loadout.Current.AdsModelPosition, aim.Blend);
+                Models[i].transform.localPosition = rest + Vector3.forward * (Models[i].activeSelf ? thrust : 0f);
+                Transform bolt = Models[i].transform.Find("Bolt");
+                if (bolt != null)
+                {
+                    float cycle = Mathf.Clamp01((Time.time - shotStarted - 0.15f) / 0.95f);
+                    bolt.localPosition = new Vector3(0.065f, 0.025f, -Mathf.Sin(cycle * Mathf.PI) * 0.09f);
+                }
+            }
         }
         void Refresh()
         {

@@ -30,6 +30,11 @@ namespace Harvest
         public Color TracerColor = new Color(1f, 0.8f, 0.35f);
         [Min(0.001f)] public float TracerWidth = 0.025f;
         [Min(0.01f)] public float TracerLifetime = 0.08f;
+        [Header("Precision aiming")]
+        public bool IsPrecision;
+        [Min(0f)] public float AdsSpreadDegrees = 0.05f;
+        [Range(20f, 75f)] public float AdsFieldOfView = 42f;
+        public Vector3 AdsModelPosition = new Vector3(0f, -0.14f, 0.65f);
         [Header("Charged shot")]
         public bool SupportsCharge;
         [Min(0.01f)] public float ChargeSeconds = 1f;

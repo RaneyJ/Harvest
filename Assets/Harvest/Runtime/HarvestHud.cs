@@ -11,6 +11,7 @@ namespace Harvest
         public HarvestEncounter Encounter;
 
         Suppression suppression;
+        PrecisionAim aim;
         GrenadeInventory grenades;
         MarineCombatActions actions;
         string status;
@@ -33,6 +34,7 @@ namespace Harvest
         void Start()
         {
             suppression = Marine.GetComponent<Suppression>();
+            aim = Marine.GetComponent<PrecisionAim>();
             grenades = Marine.GetComponent<GrenadeInventory>();
             actions = Marine.GetComponent<MarineCombatActions>();
             if (actions != null) actions.HitEnemy += MarkHit;
@@ -121,7 +123,13 @@ namespace Harvest
                 float x = Screen.width * 0.5f;
                 float y = Screen.height * 0.5f;
                 GUI.color = Time.time < hitMarkerUntil ? Color.red : Color.white;
-                GUI.Label(new Rect(x - 8f, y - 12f, 30f, 30f), "+");
+                if (aim == null || !aim.IsAiming) GUI.Label(new Rect(x - 8f, y - 12f, 30f, 30f), "+");
+                else if (Time.time < hitMarkerUntil) GUI.Label(new Rect(x - 8f, y - 12f, 30f, 30f), "×");
+                if (Loadout.Current != null && Loadout.Current.IsPrecision)
+                {
+                    GUI.color = Color.white;
+                    GUI.Label(new Rect(16f, Screen.height - 22f, 245f, 22f), "[RIGHT MOUSE] AIM — BOLT ACTION");
+                }
                 if (Loadout.IsCharging)
                 {
                     GUI.color = Color.white;
