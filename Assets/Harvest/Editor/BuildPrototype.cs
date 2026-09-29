@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "15";
+        const string SceneVersion = "16";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -95,6 +95,7 @@ namespace Harvest.Editor
             PlasmaBolt bolt = MakeBoltPrefab(plasma);
             WeaponDefinition plasmaPistol = MakePlasmaWeapon("Plasma Pistol", 20f, 1.7f, 2, 0.55f, 17f, false, bolt, plasma);
             WeaponDefinition plasmaRifle = MakePlasmaWeapon("Plasma Rifle", 12f, 1.25f, 3, 0.13f, 22f, true, bolt, plasmaRifleColor);
+            AssignApprovedAudio(plasmaRifle, "PlasmaRifleSingle", null);
             ConfigureFeedback(rifleData, 1.1f, 0.25f, 0.045f, 3f);
             ConfigureFeedback(shotgunData, 3.3f, 0.45f, 0.09f, 7f);
             ConfigureFeedback(huntingRifle, 4f, 0.25f, 0.1f, 8f);
