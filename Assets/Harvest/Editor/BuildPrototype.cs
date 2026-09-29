@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "8";
+        const string SceneVersion = "9";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the lighter suppression blur and sustained-fire threshold. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
+                    "This scene predates melee and grenade combat. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -104,6 +104,13 @@ namespace Harvest.Editor
             PlasmaBolt bolt = MakeBoltPrefab(plasma);
             WeaponDefinition plasmaPistol = MakePlasmaWeapon("Plasma Pistol", 20f, 1.7f, 2, 0.55f, 17f, false, bolt, plasma);
             WeaponDefinition plasmaRifle = MakePlasmaWeapon("Plasma Rifle", 12f, 1.25f, 3, 0.13f, 22f, true, bolt, plasmaRifleColor);
+            GrenadeExplosionVisual explosion = MakeGrenadeExplosionPrefab();
+            GrenadeDefinition fragData = MakeGrenade("Frag", GrenadeKind.Frag, human, explosion);
+            GrenadeDefinition plasmaGrenadeData = MakeGrenade("Plasma", GrenadeKind.Plasma, plasma, explosion);
+            CreateGrenadePickup(new Vector3(-2f, 0.55f, -18f), GrenadeKind.Frag, human);
+            CreateGrenadePickup(new Vector3(2f, 0.55f, -18f), GrenadeKind.Plasma, plasma);
+            CreateGrenadePickup(new Vector3(4f, 0.55f, 3f), GrenadeKind.Frag, human);
+            CreateGrenadePickup(new Vector3(-4f, 0.55f, 14f), GrenadeKind.Plasma, plasma);
             DroppedWeapon dropPrefab = MakeDropPrefab();
             CovenantEnemy gruntPrefab = MakeEnemyPrefab<GruntBehavior>("Grunt", grunt, plasmaPistol, dropPrefab, 48, 0, 2.6f, 12f, 0.9f);
             CovenantEnemy jackalPrefab = MakeEnemyPrefab<JackalBehavior>("Jackal", jackal, plasmaPistol, dropPrefab, 75, 85, 2.3f, 16f, 0.9f);
@@ -129,6 +136,10 @@ namespace Harvest.Editor
             loadout.DropPrefab = dropPrefab;
             MarineController marine = player.AddComponent<MarineController>();
             player.GetComponent<CombatTarget>().Team = CombatTeam.Marine;
+            MarineCombatActions actions = player.AddComponent<MarineCombatActions>();
+            GrenadeInventory grenades = player.GetComponent<GrenadeInventory>();
+            grenades.Frag = fragData;
+            grenades.Plasma = plasmaGrenadeData;
             GameObject view = new GameObject("Eyes");
             view.transform.SetParent(player.transform, false);
             view.transform.localPosition = new Vector3(0, 0.65f, 0);
@@ -141,6 +152,7 @@ namespace Harvest.Editor
             blur.BlurShader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Harvest/Shaders/SuppressionBlur.shader");
             marine.View = camera;
             loadout.View = camera;
+            actions.View = camera;
             GameObject rifle = Block("Service rifle silhouette", human, new Vector3(0, 0, 0), new Vector3(0.13f, 0.14f, 0.65f));
             rifle.transform.SetParent(view.transform, false);
             rifle.transform.localPosition = new Vector3(0.36f, -0.33f, 0.7f);
@@ -155,6 +167,7 @@ namespace Harvest.Editor
                 new Vector3(0.36f, -0.32f, 0.75f), new Vector3(0.25f, 0.2f, 0.7f));
             WeaponView weaponView = view.AddComponent<WeaponView>();
             weaponView.Loadout = loadout;
+            weaponView.Melee = player.GetComponent<MeleeAttack>();
             weaponView.Definitions = new[] { rifleData, shotgunData, plasmaPistol, plasmaRifle };
             weaponView.Models = new[] { rifle, shotgun, pistolModel, rifleModel };
 
@@ -283,140 +296,109 @@ namespace Harvest.Editor
         }
 
         static GameObject MakeViewModel(string name, Material material, Transform parent, Vector3 position, Vector3 scale)
-        {
-            GameObject model = Block(name, material, Vector3.zero, scale);
-            model.transform.SetParent(parent, false);
-            model.transform.localPosition = position;
-            Object.DestroyImmediate(model.GetComponent<Collider>());
-            return model;
+  …2115 tokens truncated…      definition.DamageRadius = 5f;
+                    definition.ShieldMultiplier = 2f;
+                    definition.BlastColor = new Color(0.3f, 0.4f, 1f);
+                }
+                AssetDatabase.CreateAsset(definition, path);
+            }
+            if (definition.ExplosionPrefab == null) definition.ExplosionPrefab = explosion;
+            if (definition.Prefab == null)
+            {
+                string prefabPath = $"Assets/Harvest/Prefabs/{name} Grenade.prefab";
+                GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
+                if (existing != null) definition.Prefab = existing.GetComponent<GrenadeProjectile>();
+                else
+                {
+                    GameObject root = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    root.name = name + " Grenade";
+                    root.transform.localScale = Vector3.one * 0.24f;
+                    root.GetComponent<Renderer>().sharedMaterial = material;
+                    Rigidbody body = root.AddComponent<Rigidbody>();
+                    body.mass = 0.4f;
+                    body.linearDamping = 0.05f;
+                    body.angularDamping = 0.1f;
+                    body.interpolation = RigidbodyInterpolation.Interpolate;
+                    body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+                    root.GetComponent<SphereCollider>().sharedMaterial = MakeGrenadePhysics(name, kind);
+                    root.AddComponent<GrenadeProjectile>().Definition = definition;
+                    GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                    Object.DestroyImmediate(root);
+                    definition.Prefab = saved.GetComponent<GrenadeProjectile>();
+                }
+            }
+            EditorUtility.SetDirty(definition);
+            return definition;
         }
 
-        static PlasmaBolt MakeBoltPrefab(Material material)
+        static PhysicsMaterial MakeGrenadePhysics(string name, GrenadeKind kind)
         {
-            string path = "Assets/Harvest/Prefabs/Plasma Bolt.prefab";
+            string path = $"Assets/Harvest/Materials/{name} Grenade Bounce.physicMaterial";
+            PhysicsMaterial existing = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(path);
+            if (existing != null) return existing;
+            PhysicsMaterial material = new PhysicsMaterial(name + " Grenade Bounce");
+            material.bounciness = kind == GrenadeKind.Frag ? 0.55f : 0.1f;
+            material.dynamicFriction = 0.45f;
+            material.staticFriction = 0.5f;
+            material.bounceCombine = PhysicsMaterialCombine.Maximum;
+            AssetDatabase.CreateAsset(material, path);
+            return material;
+        }
+
+        static GrenadeExplosionVisual MakeGrenadeExplosionPrefab()
+        {
+            const string path = "Assets/Harvest/Prefabs/Grenade Explosion.prefab";
             GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (existing != null) return existing.GetComponent<PlasmaBolt>();
+            if (existing != null) return existing.GetComponent<GrenadeExplosionVisual>();
+            const string materialPath = "Assets/Harvest/Materials/Grenade Blast.mat";
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
+            if (material == null)
+            {
+                material = new Material(Shader.Find("Standard"));
+                material.color = new Color(1f, 1f, 1f, 0.35f);
+                material.SetFloat("_Mode", 2f);
+                material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                material.SetInt("_ZWrite", 0);
+                material.SetOverrideTag("RenderType", "Transparent");
+                material.EnableKeyword("_ALPHABLEND_ON");
+                material.EnableKeyword("_EMISSION");
+                material.renderQueue = 3000;
+                AssetDatabase.CreateAsset(material, materialPath);
+            }
             GameObject root = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            root.name = "Plasma Bolt";
-            root.transform.localScale = Vector3.one * 0.26f;
+            root.name = "Grenade Explosion";
             Object.DestroyImmediate(root.GetComponent<Collider>());
             root.GetComponent<Renderer>().sharedMaterial = material;
-            root.AddComponent<PlasmaBolt>();
+            GrenadeExplosionVisual effect = root.AddComponent<GrenadeExplosionVisual>();
+            effect.Shell = root.GetComponent<Renderer>();
+            effect.Flash = root.AddComponent<Light>();
+            effect.Flash.type = LightType.Point;
+            effect.Flash.intensity = 4f;
             GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
-            return saved.GetComponent<PlasmaBolt>();
+            return saved.GetComponent<GrenadeExplosionVisual>();
         }
 
-        static CovenantEnemy MakeEnemyPrefab<T>(string name, Material material, WeaponDefinition weapon, DroppedWeapon dropPrefab,
-            float health, float shield, float moveSpeed, float preferredRange, float visualHeight)
-            where T : EnemyBehavior
+        static void CreateGrenadePickup(Vector3 position, GrenadeKind kind, Material material)
         {
-            string path = $"Assets/Harvest/Prefabs/{name}.prefab";
-            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-            if (existing != null) return EnsureEnemyPrefab<T>(path, weapon, dropPrefab);
-            GameObject root = new GameObject(name);
-            CharacterController controller = root.AddComponent<CharacterController>();
-            bool isBrute = typeof(T) == typeof(BruteBehavior);
-            controller.height = isBrute ? 3.2f : 2f;
-            controller.radius = isBrute ? 0.62f : 0.42f;
-            Vitality vitality = root.AddComponent<Vitality>();
-            vitality.MaxHealth = health;
-            vitality.MaxShield = shield;
-            T behavior = root.AddComponent<T>();
-            behavior.MoveSpeed = moveSpeed;
-            behavior.PreferredRange = preferredRange;
-            ActorWeapon enemyWeapon = root.AddComponent<ActorWeapon>();
-            enemyWeapon.Team = CombatTeam.Covenant;
-            enemyWeapon.StartingWeapon = weapon;
-            enemyWeapon.DropPrefab = dropPrefab;
-            root.AddComponent<CovenantEnemy>();
-            root.AddComponent<CombatTarget>().Team = CombatTeam.Covenant;
-            root.AddComponent<Suppression>();
-            EnemyHealthBar bar = root.AddComponent<EnemyHealthBar>();
-            bar.Height = isBrute ? 3.3f : 2.1f;
-            EnemyHitFeedback feedback = root.AddComponent<EnemyHitFeedback>();
-            feedback.LabelHeight = isBrute ? 3.7f : 2.5f;
-            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            visual.name = "Visual";
+            GameObject root = new GameObject(kind + " grenade supply");
+            root.transform.position = position;
+            SphereCollider trigger = root.AddComponent<SphereCollider>();
+            trigger.radius = 0.9f;
+            trigger.isTrigger = true;
+            Rigidbody body = root.AddComponent<Rigidbody>();
+            body.isKinematic = true;
+            body.useGravity = false;
+            GrenadePickup pickup = root.AddComponent<GrenadePickup>();
+            pickup.Kind = kind;
+            GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            visual.name = "Grenade supply visual";
             visual.transform.SetParent(root.transform, false);
-            visual.transform.localScale = isBrute ? new Vector3(1.4f, visualHeight, 1.4f) : new Vector3(0.9f, visualHeight, 0.9f);
+            visual.transform.localScale = Vector3.one * 0.4f;
             visual.GetComponent<Renderer>().sharedMaterial = material;
             Object.DestroyImmediate(visual.GetComponent<Collider>());
-            AddHeldWeapon(root, weapon, isBrute);
-            if (behavior is JackalBehavior jackalBehavior) AddJackalShield(root, jackalBehavior);
-            GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, path);
-            Object.DestroyImmediate(root);
-            return saved.GetComponent<CovenantEnemy>();
-        }
-
-        static CovenantEnemy EnsureEnemyPrefab<T>(string path, WeaponDefinition weapon, DroppedWeapon dropPrefab) where T : EnemyBehavior
-        {
-            GameObject root = PrefabUtility.LoadPrefabContents(path);
-            bool changed = false;
-            CombatTarget target = root.GetComponent<CombatTarget>();
-            if (target == null) { target = root.AddComponent<CombatTarget>(); changed = true; }
-            if (target.Team != CombatTeam.Covenant) { target.Team = CombatTeam.Covenant; changed = true; }
-            if (root.GetComponent<Suppression>() == null) { root.AddComponent<Suppression>(); changed = true; }
-            ActorWeapon enemyWeapon = root.GetComponent<ActorWeapon>();
-            if (enemyWeapon == null)
-            {
-                enemyWeapon = root.AddComponent<ActorWeapon>();
-                changed = true;
-            }
-            if (enemyWeapon.Team != CombatTeam.Covenant) { enemyWeapon.Team = CombatTeam.Covenant; changed = true; }
-            if (enemyWeapon.StartingWeapon == null) { enemyWeapon.StartingWeapon = weapon; changed = true; }
-            if (enemyWeapon.DropPrefab == null) { enemyWeapon.DropPrefab = dropPrefab; changed = true; }
-            if (root.transform.Find("Held weapon") == null)
-            {
-                AddHeldWeapon(root, enemyWeapon.StartingWeapon, typeof(T) == typeof(BruteBehavior));
-                changed = true;
-            }
-            if (root.GetComponent<EnemyHitFeedback>() == null)
-            {
-                EnemyHitFeedback feedback = root.AddComponent<EnemyHitFeedback>();
-                feedback.LabelHeight = typeof(T) == typeof(BruteBehavior) ? 3.7f : 2.5f;
-                changed = true;
-            }
-            if (root.GetComponent<JackalBehavior>() is JackalBehavior jackal && jackal.ShieldVisual == null)
-            {
-                AddJackalShield(root, jackal);
-                changed = true;
-            }
-            if (root.GetComponent<BruteBehavior>() is BruteBehavior brute && brute.ChargeTriggerRange <= 0f)
-            {
-                brute.ChargeTriggerRange = 14f;
-                brute.WindupSeconds = 0.85f;
-                brute.ChargeSeconds = 1.1f;
-                brute.ChargeSpeed = 8f;
-                brute.RecoverySeconds = 1.2f;
-                changed = true;
-            }
-            if (changed) PrefabUtility.SaveAsPrefabAsset(root, path);
-            PrefabUtility.UnloadPrefabContents(root);
-            return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<CovenantEnemy>();
-        }
-
-        static void AddJackalShield(GameObject root, JackalBehavior behavior)
-        {
-            GameObject plate = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            plate.name = "Front shield";
-            plate.transform.SetParent(root.transform, false);
-            plate.transform.localPosition = new Vector3(0f, 0.15f, 0.65f);
-            plate.transform.localScale = new Vector3(1.2f, 1.4f, 0.08f);
-            plate.GetComponent<Renderer>().sharedMaterial = MakeMaterial("Jackal Shield", new Color(0.13f, 0.77f, 1f), true);
-            Object.DestroyImmediate(plate.GetComponent<Collider>());
-            behavior.ShieldVisual = plate;
-        }
-
-        static void AddHeldWeapon(GameObject root, WeaponDefinition definition, bool isBrute)
-        {
-            GameObject model = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            model.name = "Held weapon";
-            model.transform.SetParent(root.transform, false);
-            model.transform.localPosition = isBrute ? new Vector3(0.85f, 0.25f, 0.55f) : new Vector3(0.45f, 0f, 0.5f);
-            model.transform.localScale = isBrute ? new Vector3(0.22f, 0.22f, 0.7f) : new Vector3(0.17f, 0.2f, 0.35f);
-            if (definition != null) model.GetComponent<Renderer>().sharedMaterial = definition.PickupMaterial;
-            Object.DestroyImmediate(model.GetComponent<Collider>());
+            pickup.Visual = visual.transform;
         }
 
         static void CreateArmorPickup(Vector3 position, Material material, float amount)
@@ -502,11 +484,10 @@ namespace Harvest.Editor
             if (existing != null)
             {
                 GameObject contents = PrefabUtility.LoadPrefabContents(path);
-                if (contents.GetComponent<Suppression>() == null)
-                {
-                    contents.AddComponent<Suppression>();
-                    PrefabUtility.SaveAsPrefabAsset(contents, path);
-                }
+                bool changed = false;
+                if (contents.GetComponent<Suppression>() == null) { contents.AddComponent<Suppression>(); changed = true; }
+                if (contents.GetComponent<MeleeAttack>() == null) { contents.AddComponent<MeleeAttack>(); changed = true; }
+                if (changed) PrefabUtility.SaveAsPrefabAsset(contents, path);
                 PrefabUtility.UnloadPrefabContents(contents);
                 return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<AlliedMarine>();
             }
@@ -533,6 +514,7 @@ namespace Harvest.Editor
             weapon.Team = CombatTeam.Marine;
             weapon.StartingWeapon = rifle;
             weapon.DropPrefab = drop;
+            root.AddComponent<MeleeAttack>();
             AlliedMarine marine = root.AddComponent<AlliedMarine>();
             GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             visual.name = "Visual";

@@ -78,6 +78,7 @@ namespace Harvest.Editor
                 Physics.SyncTransforms();
 
                 definition = ScriptableObject.CreateInstance<WeaponDefinition>();
+                definition.DamagePerPellet = 0f; // Test exposure without damaging the temporary target.
                 definition.Pellets = 8;
                 definition.SpreadDegrees = 0f;
                 pressure.ResetPressure();

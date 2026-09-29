@@ -11,6 +11,8 @@ namespace Harvest
         public HarvestEncounter Encounter;
 
         Suppression suppression;
+        GrenadeInventory grenades;
+        MarineCombatActions actions;
         string status;
         string callSign;
         string weapon;
@@ -31,6 +33,9 @@ namespace Harvest
         void Start()
         {
             suppression = Marine.GetComponent<Suppression>();
+            grenades = Marine.GetComponent<GrenadeInventory>();
+            actions = Marine.GetComponent<MarineCombatActions>();
+            if (actions != null) actions.HitEnemy += MarkHit;
             if (Armor == null)
             {
                 Debug.LogError("The Line HUD needs the armor update. Stop Play mode and choose Harvest > Build The Line Prototype.", this);
@@ -62,6 +67,7 @@ namespace Harvest
             }
             Loadout.Changed -= Refresh;
             Loadout.HitEnemy -= MarkHit;
+            if (actions != null) actions.HitEnemy -= MarkHit;
         }
 
         void MarkHit() => hitMarkerUntil = Time.time + 0.12f;
@@ -103,6 +109,9 @@ namespace Harvest
             GUI.color = Color.white;
             GUI.Box(new Rect(16, 16, 390, 106), $"{status}\n{callSign}   |   MARINES LEFT: {marinesLeft}\nHOSTILES: {hostiles}   |   SQUAD: {Encounter.AlliesAlive}");
             GUI.Box(new Rect(16, Screen.height - 116, 245, 94), $"ARMOR  {armor} / {Mathf.CeilToInt(Armor.MaxArmor)}\nHEALTH  {health}\n{weapon.ToUpperInvariant()}  {ammo}");
+            if (grenades != null)
+                GUI.Box(new Rect(16, Screen.height - 162, 245, 42),
+                    $"FRAG {grenades.Count(GrenadeKind.Frag)}   |   PLASMA {grenades.Count(GrenadeKind.Plasma)}\n[G] {grenades.Selected.ToString().ToUpperInvariant()}   [Q] SWITCH");
             if (Time.time < pickupUntil)
                 GUI.Box(new Rect(270, Screen.height - 64, 136, 40), $"ARMOR +{pickupAmount}");
             if (Time.time < armorBrokenUntil)

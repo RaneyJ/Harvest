@@ -17,6 +17,8 @@ An early, unofficial fan prototype about ordinary marines during the fighting on
 | E near a drop | Pick up weapon and replace the equipped slot |
 | Shift / Space | Sprint / jump |
 | Hold Left Ctrl | Crouch; release to stand when there is headroom |
+| F | Melee |
+| G / Q | Throw selected grenade / switch frag and plasma |
 
 Hold the road alongside three allied riflemen through five escalating Covenant waves, use the green armor supplies, collect Covenant weapons from fallen enemies, then reach the marked evacuation pad. Death transfers control to another marine at the defense line. The three available lives are an opening-sequence device, not the eventual campaign rules.
 
@@ -33,6 +35,18 @@ The generated scene, prefabs, materials, and data assets should be committed aft
 Grunts and Jackals carry plasma pistols; Brutes carry plasma rifles. NPC death drops receive a random 40–70% of battery capacity (or magazine and reserve capacities for conventional weapons); the current marine also drops the equipped weapon on death. Press E near a drop to replace the currently selected weapon; the replaced weapon drops with its remaining ammo. Plasma weapons use finite charge and cannot reload. The plasma pistol charges in one second and consumes 20 battery units per charged shot. Release early for a normal shot; below the charged-shot cost, release fires a normal shot if enough energy remains. The HUD shows charge progress. Charged impacts strip an active shield without health overflow, or deal 40 damage to unshielded targets. Jackal flanking still bypasses the front shield. Weapon switching, pickup, death, cursor release, and encounter completion cancel charging. Charge duration, cost, and damage live in `WeaponDefinition`; AI can request a charged shot through the shared runtime later.
 
 This is still **single-player only**. Damage and encounter progression now have clear mutation points for a future host/server; responsive look and immediate local feedback can remain client-side.
+
+## Melee and grenades
+
+F performs a 60-damage melee strike within a 2.3-meter, 55-degree half-angle cone, with a 0.65-second cooldown. The closest living opponent must be visible; walls and allies block the strike. The equipped model thrusts forward and confirmed hits show the normal hit marker. Allied riflemen can use the same `MeleeAttack` at close range. Melee retains ordinary armor and directional shield rules.
+
+G throws the selected grenade; Q switches frag/plasma. Each marine starts with **two per type**. Walk over the green frag or purple plasma supplies to refill that type to two. Full inventories leave supplies on the ground. A player handoff resets both counts. Throwing and melee briefly interrupt firing and cancel a plasma-pistol charge.
+
+Frag grenades use a bouncing rigidbody and a 2.5-second fuse. Plasma grenades bounce weakly on terrain, stick to living targets, follow their movement, and detonate two seconds after sticking; an unstuck plasma grenade expires after four seconds. A stuck victim's death releases the grenade without deleting it or restarting the fuse. Swept/overlap contact detection supplements physics callbacks for CharacterControllers.
+
+`GrenadeDefinition` controls prefab, fuse, throw speed, damage, shield multiplier, blast and suppression radii, cover attenuation, and color. Frag defaults are 180 peak damage / 6-meter damage radius; plasma defaults are 320 / 5 meters with double shield damage. Both produce up to 1.4 pressure over a 12-meter radius, falling with distance: a close blast can immediately cross the sustained-fire threshold. Solid cover reduces blast damage to 25% and pressure to 50%. Blast pressure affects both factions; friendly blast damage is disabled, but the thrower can hurt themselves.
+
+`CombatGeometry` shares capsule-distance calculations between bullets, melee, and blasts. `CombatDamage` resolves common faction/armor/shield rules. `GrenadeInventory` owns counts and throwing, `GrenadeProjectile` owns bounce/stick/fuse behavior, `GrenadeBlast` resolves radial damage and pressure once per actor, and `MarineCombatActions` handles player controls. No NPC grenade-throwing behavior is enabled yet.
 
 ## Crouching and suppression
 
@@ -55,5 +69,7 @@ Three named riflemen defend the checkpoint alongside the player. They have the s
 New scenes contain five waves with 3, 6, 7, 8, and 10 enemies. Later waves add shield lines and paired Brutes, with 7–9 second pauses. Existing encounter assets keep their configured waves and receive the three later waves once, tracked by `PrototypeWaveRevision`. Subsequent rebuilds preserve edited waves and do not append duplicates. We will tune the combat before wiring networking.
 
 During Play mode, **Harvest > Run Combat Regression Checks (Play Mode)** exercises faction/range filtering, projectile and shotgun deduplication, impacts on cover, cooldown/ammo rejection, silent buildup, activation threshold, effect ramp, pressure limits and reset using temporary actors outside the map. This does not replace visual blur, headroom, recovery timing, or AI play testing.
+
+**Harvest > Run Grenade and Melee Checks (Play Mode)** checks radial suppression/cover, self and friendly damage, one blast application per actor, melee visibility/cooldown, two-per-type capacity, refill/selection, and rejected throws. Play-test real bounce trajectories, plasma adhesion to moving/dead targets, fuses, walk-over supplies, and weapon/action feedback separately.
 
 No Unity Editor is available in the authoring environment, so the changes have had source inspection but not an Editor import or play test. Report any import error with the Unity Console output.

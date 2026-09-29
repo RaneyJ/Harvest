@@ -1,0 +1,20 @@
+using UnityEngine;
+
+namespace Harvest
+{
+    // Weapons, melee, and explosions share faction rules and armor/shield resolution.
+    public static class CombatDamage
+    {
+        public static bool Apply(CombatTarget target, CombatTeam sourceTeam, float amount, Vector3 origin,
+            float shieldMultiplier = 1f, bool breaksShield = false, CombatTarget selfDamageOwner = null)
+        {
+            if (target == null || !target.IsAlive || amount <= 0f ||
+                (target.Team == sourceTeam && target != selfDamageOwner)) return false;
+            CovenantEnemy enemy = target.GetComponent<CovenantEnemy>();
+            if (enemy != null) enemy.ReceiveWeaponHit(amount, shieldMultiplier, origin, breaksShield);
+            else if (target.GetComponent<MarineArmor>() is MarineArmor armor) armor.ApplyDamage(amount);
+            else target.GetComponent<Vitality>().ApplyDamage(amount, shieldMultiplier, false, breaksShield);
+            return true;
+        }
+    }
+}

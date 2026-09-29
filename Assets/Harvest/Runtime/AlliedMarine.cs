@@ -27,6 +27,7 @@ namespace Harvest
         Vitality vitality;
         MarineArmor armor;
         ActorWeapon weapon;
+        MeleeAttack melee;
         HarvestEncounter encounter;
         float nextThink;
         float phaseUntil;
@@ -44,6 +45,7 @@ namespace Harvest
             vitality = GetComponent<Vitality>();
             armor = GetComponent<MarineArmor>();
             weapon = GetComponent<ActorWeapon>();
+            melee = GetComponent<MeleeAttack>();
             encounter = FindFirstObjectByType<HarvestEncounter>();
             agent.updateRotation = false;
         }
@@ -185,6 +187,13 @@ namespace Harvest
         void FireBurst()
         {
             if (target == null || Time.time < nextShot || !target.CanSeeFrom(identity.AimPosition)) return;
+            if (melee != null && Vector3.Distance(identity.AimPosition,
+                CombatGeometry.ClosestBodyPoint(target.GetComponent<Collider>(), identity.AimPosition, target.AimPosition)) <= melee.Reach &&
+                melee.TrySwing(identity.AimPosition, (target.AimPosition - identity.AimPosition).normalized, out bool meleeHit))
+            {
+                nextShot = Time.time + melee.Cooldown;
+                return;
+            }
             nextShot = Time.time + 0.18f;
             int before = weapon.Equipped.Magazine;
             int energyBefore = weapon.Equipped.Energy;

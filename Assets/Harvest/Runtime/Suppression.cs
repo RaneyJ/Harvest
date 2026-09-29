@@ -80,29 +80,8 @@ namespace Harvest
                 amount *= CoveredMultiplier;
             return amount;
         }
-        Vector3 ClosestBodyPoint(Vector3 point)
-        {
-            // CharacterController is not one of Physics.ClosestPoint's supported collider
-            // shapes. Use its capsule directly, including the player's current crouch height.
-            if (body is CharacterController controller)
-            {
-                Vector3 scale = controller.transform.lossyScale;
-                float radius = controller.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.z));
-                Vector3 center = controller.transform.TransformPoint(controller.center);
-                float halfAxis = Mathf.Max(0f, controller.height * Mathf.Abs(scale.y) * 0.5f - radius);
-                Vector3 axis = ClosestOnSegment(center - controller.transform.up * halfAxis,
-                    center + controller.transform.up * halfAxis, point);
-                Vector3 delta = point - axis;
-                return delta.sqrMagnitude <= radius * radius ? point : axis + delta.normalized * radius;
-            }
-            return body != null ? body.ClosestPoint(point) : identity.AimPosition;
-        }
-        public static Vector3 ClosestOnSegment(Vector3 start, Vector3 end, Vector3 point)
-        {
-            Vector3 segment = end - start;
-            if (segment.sqrMagnitude < 0.000001f) return start;
-            float t = Mathf.Clamp01(Vector3.Dot(point - start, segment) / segment.sqrMagnitude);
-            return start + segment * t;
-        }
+        Vector3 ClosestBodyPoint(Vector3 point) => CombatGeometry.ClosestBodyPoint(body, point, identity.AimPosition);
+        public static Vector3 ClosestOnSegment(Vector3 start, Vector3 end, Vector3 point) =>
+            CombatGeometry.ClosestOnSegment(start, end, point);
     }
 }

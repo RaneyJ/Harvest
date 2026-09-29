@@ -48,21 +48,8 @@ namespace Harvest
 
         public static bool ApplyHit(Collider collider, CombatTeam sourceTeam, float damage, float shieldMultiplier, Vector3 origin, bool breaksShield = false)
         {
-            CovenantEnemy enemy = collider.GetComponentInParent<CovenantEnemy>();
-            if (enemy != null)
-            {
-                if (sourceTeam == CombatTeam.Covenant) return false;
-                enemy.ReceiveWeaponHit(damage, shieldMultiplier, origin, breaksShield);
-                return true;
-            }
-            MarineArmor marine = collider.GetComponentInParent<MarineArmor>();
-            if (marine != null)
-            {
-                if (sourceTeam == CombatTeam.Marine) return false;
-                marine.ApplyDamage(damage);
-                return true;
-            }
-            return false;
+            return CombatDamage.Apply(collider.GetComponentInParent<CombatTarget>(), sourceTeam,
+                damage, origin, shieldMultiplier, breaksShield);
         }
     }
 }

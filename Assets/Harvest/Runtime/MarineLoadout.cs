@@ -18,6 +18,7 @@ namespace Harvest
         float chargeStarted;
         Vitality vitality;
         Suppression suppression;
+        MarineCombatActions actions;
         HarvestEncounter encounter;
 
         public WeaponDefinition Current => Equipped?.Definition;
@@ -32,6 +33,7 @@ namespace Harvest
         {
             vitality = GetComponent<Vitality>();
             suppression = GetComponent<Suppression>();
+            actions = GetComponent<MarineCombatActions>();
             encounter = FindFirstObjectByType<HarvestEncounter>();
             ResetLoadout();
         }
@@ -96,7 +98,8 @@ namespace Harvest
 
         void HandleFireInput()
         {
-            if (Cursor.lockState != CursorLockMode.Locked || Current == null || View == null)
+            if ((actions != null && (actions.IsBusy || Input.GetKeyDown(KeyCode.F) || Input.GetKeyDown(KeyCode.G))) ||
+                Cursor.lockState != CursorLockMode.Locked || Current == null || View == null)
             {
                 CancelCharge();
                 return;

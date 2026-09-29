@@ -62,6 +62,7 @@ namespace Harvest
             Vitality.Restore();
             GetComponent<MarineArmor>().ResetArmor();
             GetComponent<MarineLoadout>().ResetLoadout();
+            GetComponent<GrenadeInventory>()?.ResetInventory();
         }
 
         void Update()
