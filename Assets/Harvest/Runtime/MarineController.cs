@@ -21,6 +21,12 @@ namespace Harvest
         {
             controller = GetComponent<CharacterController>();
             Vitality = GetComponent<Vitality>();
+            if (Vitality == null)
+            {
+                Debug.LogError("The Line scene needs updating. Stop Play mode and choose Harvest > Build The Line Prototype.", this);
+                enabled = false;
+                return;
+            }
             encounter = FindFirstObjectByType<HarvestEncounter>();
         }
 

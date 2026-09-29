@@ -28,19 +28,21 @@ namespace Harvest
 
         void OnEnable()
         {
-            if (Marine != null) Marine.GetComponent<Vitality>().Died += MarineDied;
+            if (Marine != null && Marine.GetComponent<Vitality>() != null)
+                Marine.GetComponent<Vitality>().Died += MarineDied;
         }
 
         void OnDisable()
         {
-            if (Marine != null) Marine.GetComponent<Vitality>().Died -= MarineDied;
+            if (Marine != null && Marine.GetComponent<Vitality>() != null)
+                Marine.GetComponent<Vitality>().Died -= MarineDied;
         }
 
         void Start()
         {
             if (Definition == null || Definition.Waves == null || Definition.Waves.Length == 0)
             {
-                Debug.LogError("The encounter needs at least one configured wave.", this);
+                Debug.LogError("The Line scene needs updating. Stop Play mode and choose Harvest > Build The Line Prototype to create and assign encounter waves.", this);
                 enabled = false;
                 return;
             }

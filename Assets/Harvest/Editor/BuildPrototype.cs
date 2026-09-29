@@ -9,13 +9,25 @@ namespace Harvest.Editor
     public static class BuildPrototype
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
+        const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
         static void CreateOnFirstImport()
         {
             EditorApplication.delayCall += () =>
             {
-                if (!File.Exists(ScenePath) && !EditorApplication.isPlayingOrWillChangePlaymode)
+                if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+                if (!File.Exists(ScenePath))
+                {
+                    Build();
+                    return;
+                }
+                EncounterDefinition data = AssetDatabase.LoadAssetAtPath<EncounterDefinition>(EncounterPath);
+                bool sceneReferencesData = System.Array.IndexOf(AssetDatabase.GetDependencies(ScenePath), EncounterPath) >= 0;
+                if (data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
+                if (EditorUtility.DisplayDialog("Update The Line prototype",
+                    "This scene predates the weapon and encounter data update. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing weapon and encounter assets are preserved.",
+                    "Rebuild scene", "Later"))
                     Build();
             };
         }
@@ -221,11 +233,13 @@ namespace Harvest.Editor
 
         static EncounterDefinition MakeEncounter(CovenantEnemy grunt, CovenantEnemy jackal, CovenantEnemy brute)
         {
-            const string path = "Assets/Harvest/Data/The Line.asset";
-            EncounterDefinition definition = AssetDatabase.LoadAssetAtPath<EncounterDefinition>(path);
-            if (definition != null) return definition;
-            definition = ScriptableObject.CreateInstance<EncounterDefinition>();
-            AssetDatabase.CreateAsset(definition, path);
+            EncounterDefinition definition = AssetDatabase.LoadAssetAtPath<EncounterDefinition>(EncounterPath);
+            if (definition != null && definition.Waves != null && definition.Waves.Length > 0) return definition;
+            if (definition == null)
+            {
+                definition = ScriptableObject.CreateInstance<EncounterDefinition>();
+                AssetDatabase.CreateAsset(definition, EncounterPath);
+            }
             definition.Waves = new[]
             {
                 new EncounterWave
