@@ -111,6 +111,14 @@ namespace Harvest
                 float y = Screen.height * 0.5f;
                 GUI.color = Time.time < hitMarkerUntil ? Color.red : Color.white;
                 GUI.Label(new Rect(x - 8f, y - 12f, 30f, 30f), "+");
+                if (Loadout.IsCharging)
+                {
+                    GUI.color = Color.white;
+                    string charge = !Loadout.Equipped.CanCharge ? "LOW BATTERY — NORMAL SHOT" :
+                        Loadout.ChargeFraction >= 1f ? "CHARGED — RELEASE TO FIRE" :
+                        $"CHARGING {Mathf.FloorToInt(Loadout.ChargeFraction * 100f)}%";
+                    GUI.Box(new Rect(x - 130f, y + 30f, 260f, 28f), charge);
+                }
             }
             GUI.color = Color.white;
             if (evacuating && !finished)

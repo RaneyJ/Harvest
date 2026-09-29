@@ -12,7 +12,7 @@ namespace Harvest
         public float NextShot { get; private set; }
         public float ReloadUntil { get; private set; }
 
-        public string AmmoText => Definition.UsesEnergy ? $"{Energy}%" :
+        public string AmmoText => Definition.UsesEnergy ? $"{Mathf.CeilToInt(100f * Energy / Mathf.Max(1, Definition.EnergyCapacity))}%" :
             ReloadUntil > Time.time ? "RELOADING" : $"{Magazine} / {Reserve}";
 
         public WeaponInstance(WeaponDefinition definition)
@@ -39,13 +39,37 @@ namespace Harvest
             return true;
         }
 
-        public bool TryConsumeShot()
+        // Only NPC death drops receive fresh ammunition. Ordinary transfers retain state.
+        public void PrepareNpcDrop()
         {
-            if (Time.time < NextShot || ReloadUntil > 0f) return false;
+            if (Definition.UsesEnergy) Energy = DropAmount(Definition.EnergyCapacity);
+            else
+            {
+                Magazine = DropAmount(Definition.MagazineSize);
+                Reserve = Definition.StartingReserve > 0 ? DropAmount(Definition.StartingReserve) : 0;
+            }
+            NextShot = 0f;
+            ReloadUntil = 0f;
+        }
+
+        static int DropAmount(int capacity)
+        {
+            int minimum = Mathf.Max(1, Mathf.CeilToInt(capacity * 0.4f));
+            int maximum = Mathf.Max(minimum, Mathf.FloorToInt(capacity * 0.7f));
+            return Random.Range(minimum, maximum + 1);
+        }
+
+        public bool CanCharge => Definition.SupportsCharge && Definition.UsesEnergy &&
+            Energy >= Definition.ChargedEnergyCost && Time.time >= NextShot && ReloadUntil <= 0f;
+
+        public bool TryConsumeShot(bool charged = false)
+        {
+            if (Time.time < NextShot || ReloadUntil > 0f || (charged && !CanCharge)) return false;
             if (Definition.UsesEnergy)
             {
-                if (Energy < Definition.EnergyPerShot) return false;
-                Energy -= Definition.EnergyPerShot;
+                int cost = charged ? Definition.ChargedEnergyCost : Definition.EnergyPerShot;
+                if (Energy < cost) return false;
+                Energy -= cost;
             }
             else
             {

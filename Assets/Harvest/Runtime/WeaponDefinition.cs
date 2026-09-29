@@ -25,5 +25,10 @@ namespace Harvest
         public PlasmaBolt ProjectilePrefab;
         [Min(1f)] public float ProjectileSpeed = 17f;
         public Material PickupMaterial;
+        [Header("Charged shot")]
+        public bool SupportsCharge;
+        [Min(0.01f)] public float ChargeSeconds = 1f;
+        [Min(1)] public int ChargedEnergyCost = 20;
+        [Min(0f)] public float ChargedDamage = 40f;
     }
 }

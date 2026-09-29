@@ -10,7 +10,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "4";
+        const string SceneVersion = "5";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -214,13 +214,22 @@ namespace Harvest.Editor
         {
             string path = $"Assets/Harvest/Data/{name}.asset";
             WeaponDefinition weapon = AssetDatabase.LoadAssetAtPath<WeaponDefinition>(path);
-            if (weapon != null) return weapon;
+            if (weapon != null)
+            {
+                if (name == "Plasma Pistol" && !weapon.SupportsCharge)
+                {
+                    weapon.SupportsCharge = true;
+                    EditorUtility.SetDirty(weapon);
+                }
+                return weapon;
+            }
             weapon = ScriptableObject.CreateInstance<WeaponDefinition>();
             AssetDatabase.CreateAsset(weapon, path);
             weapon.DisplayName = name.ToUpperInvariant();
             weapon.ShotKind = WeaponShotKind.PlasmaBolt;
             weapon.UsesEnergy = true;
             weapon.EnergyCapacity = 100;
+            weapon.SupportsCharge = name == "Plasma Pistol";
             weapon.EnergyPerShot = energyCost;
             weapon.DamagePerPellet = damage;
             weapon.ShieldMultiplier = shieldMultiplier;

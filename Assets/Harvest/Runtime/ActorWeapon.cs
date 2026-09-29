@@ -25,6 +25,7 @@ namespace Harvest
         public void Drop()
         {
             if (Equipped == null || DropPrefab == null) return;
+            Equipped.PrepareNpcDrop();
             DroppedWeapon.Spawn(DropPrefab, Equipped,
                 new Vector3(transform.position.x, 0.55f, transform.position.z));
             Equipped = null;

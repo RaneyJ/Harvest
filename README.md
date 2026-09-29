@@ -11,7 +11,7 @@ An early, unofficial fan prototype about ordinary marines during the fighting on
 | Control | Action |
 | --- | --- |
 | WASD / mouse | Move / aim |
-| Left mouse | Fire |
+| Left mouse | Fire; tap plasma pistol for a normal shot, hold then release for a charged shot |
 | 1 / 2 or scroll | Select weapon slot 1 / 2 |
 | R | Reload current magazine weapon |
 | E near a drop | Pick up weapon and replace the equipped slot |
@@ -29,7 +29,7 @@ Hold the road through two Covenant waves, use the green armor supplies, collect 
 
 The generated scene, prefabs, materials, and data assets should be committed after generation in the Editor. The code generator establishes defaults; those Unity assets become the editable source of truth for tuning. Runtime enemy spawning uses prefabs, not primitives.
 
-Grunts and Jackals carry plasma pistols; Brutes carry plasma rifles. Every enemy drops its remaining weapon charge on death; the current marine also drops the equipped weapon on death. Press E near a drop to replace the currently selected weapon; the replaced weapon drops with its remaining ammo. Plasma weapons use finite charge and cannot reload. The same definition/runtime path is ready for allied marine AI later.
+Grunts and Jackals carry plasma pistols; Brutes carry plasma rifles. NPC death drops receive a random 40–70% of battery capacity (or magazine and reserve capacities for conventional weapons); the current marine also drops the equipped weapon on death. Press E near a drop to replace the currently selected weapon; the replaced weapon drops with its remaining ammo. Plasma weapons use finite charge and cannot reload. The plasma pistol charges in one second and consumes 20 battery units per charged shot. Release early for a normal shot; below the charged-shot cost, release fires a normal shot if enough energy remains. The HUD shows charge progress. Charged impacts strip an active shield without health overflow, or deal 40 damage to unshielded targets. Jackal flanking still bypasses the front shield. Weapon switching, pickup, death, cursor release, and encounter completion cancel charging. Charge duration, cost, and damage live in `WeaponDefinition`; AI can request a charged shot through the shared runtime later.
 
 This is still **single-player only**. Damage and encounter progression now have clear mutation points for a future host/server; responsive look and immediate local feedback can remain client-side. We will tune the combat before wiring networking.
 

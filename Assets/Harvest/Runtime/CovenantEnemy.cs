@@ -47,11 +47,11 @@ namespace Harvest
             behavior.TryAttack(this, target, distance, visible);
         }
 
-        public void ReceiveWeaponHit(float amount, float shieldMultiplier, Vector3 shotOrigin)
+        public void ReceiveWeaponHit(float amount, float shieldMultiplier, Vector3 shotOrigin, bool breaksShield = false)
         {
             JackalBehavior jackal = behavior as JackalBehavior;
             bool flank = jackal != null && jackal.IsFlanked(shotOrigin);
-            vitality.ApplyDamage(amount, shieldMultiplier, flank);
+            vitality.ApplyDamage(amount, shieldMultiplier, flank, breaksShield);
         }
 
         void Die()

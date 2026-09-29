@@ -7,10 +7,11 @@ namespace Harvest
     // A shared firing and damage path. Input, enemy AI, and later allied marine AI call this.
     public static class WeaponRuntime
     {
-        public static bool Fire(WeaponInstance weapon, Vector3 origin, Quaternion aim, CombatTeam team)
+        public static bool Fire(WeaponInstance weapon, Vector3 origin, Quaternion aim, CombatTeam team, bool charged = false)
         {
-            if (weapon == null || !weapon.TryConsumeShot()) return false;
+            if (weapon == null || !weapon.TryConsumeShot(charged)) return false;
             WeaponDefinition definition = weapon.Definition;
+            float damage = charged ? definition.ChargedDamage : definition.DamagePerPellet;
             bool hitOpponent = false;
             for (int i = 0; i < definition.Pellets; i++)
             {
@@ -22,24 +23,25 @@ namespace Harvest
                     if (definition.ProjectilePrefab == null) continue;
                     PlasmaBolt bolt = Object.Instantiate(definition.ProjectilePrefab, origin + direction * 0.7f, Quaternion.identity);
                     bolt.Initialize(direction * definition.ProjectileSpeed, team,
-                        definition.DamagePerPellet, definition.ShieldMultiplier);
+                        damage, definition.ShieldMultiplier, charged);
+                    if (charged) bolt.transform.localScale *= 1.7f;
                 }
                 else if (Physics.Raycast(origin, direction, out RaycastHit hit, definition.Range, ~0, QueryTriggerInteraction.Ignore))
                 {
-                    hitOpponent |= ApplyHit(hit.collider, team, definition.DamagePerPellet,
-                        definition.ShieldMultiplier, origin);
+                    hitOpponent |= ApplyHit(hit.collider, team, damage,
+                        definition.ShieldMultiplier, origin, charged);
                 }
             }
             return hitOpponent;
         }
 
-        public static bool ApplyHit(Collider collider, CombatTeam sourceTeam, float damage, float shieldMultiplier, Vector3 origin)
+        public static bool ApplyHit(Collider collider, CombatTeam sourceTeam, float damage, float shieldMultiplier, Vector3 origin, bool breaksShield = false)
         {
             CovenantEnemy enemy = collider.GetComponentInParent<CovenantEnemy>();
             if (enemy != null)
             {
                 if (sourceTeam == CombatTeam.Covenant) return false;
-                enemy.ReceiveWeaponHit(damage, shieldMultiplier, origin);
+                enemy.ReceiveWeaponHit(damage, shieldMultiplier, origin, breaksShield);
                 return true;
             }
             MarineArmor marine = collider.GetComponentInParent<MarineArmor>();

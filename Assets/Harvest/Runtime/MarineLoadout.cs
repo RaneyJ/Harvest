@@ -14,12 +14,17 @@ namespace Harvest
 
         WeaponInstance[] slots;
         int selected;
+        WeaponInstance chargingWeapon;
+        float chargeStarted;
         Vitality vitality;
         HarvestEncounter encounter;
 
         public WeaponDefinition Current => Equipped?.Definition;
         public WeaponInstance Equipped => slots != null && slots.Length > selected ? slots[selected] : null;
         public int SelectedIndex => selected;
+        public bool IsCharging => chargingWeapon != null;
+        public float ChargeFraction => !IsCharging ? 0f : Mathf.Clamp01(
+            (Time.time - chargeStarted) / Mathf.Max(0.01f, chargingWeapon.Definition.ChargeSeconds));
         public string AmmoText => Equipped == null ? "--" : Equipped.AmmoText;
 
         void Awake()
@@ -36,11 +41,13 @@ namespace Harvest
 
         void OnDisable()
         {
+            CancelCharge();
             if (vitality != null) vitality.Died -= DropEquippedOnDeath;
         }
 
         void DropEquippedOnDeath()
         {
+            CancelCharge();
             if (Equipped == null || DropPrefab == null) return;
             Vector3 position = transform.position;
             position.y = 0.55f;
@@ -51,6 +58,7 @@ namespace Harvest
 
         public void ResetLoadout()
         {
+            CancelCharge();
             if (Weapons == null) return;
             selected = 0;
             slots = new WeaponInstance[Weapons.Length];
@@ -61,7 +69,11 @@ namespace Harvest
 
         void Update()
         {
-            if (vitality == null || !vitality.IsAlive || (encounter != null && encounter.IsFinished)) return;
+            if (vitality == null || !vitality.IsAlive || (encounter != null && encounter.IsFinished))
+            {
+                CancelCharge();
+                return;
+            }
             if (Input.GetKeyDown(KeyCode.Alpha1)) Select(0);
             if (Input.GetKeyDown(KeyCode.Alpha2)) Select(1);
             float scroll = Input.GetAxisRaw("Mouse ScrollWheel");
@@ -69,16 +81,7 @@ namespace Harvest
                 Select((selected + (scroll < 0f ? 1 : slots.Length - 1)) % slots.Length);
             if (Input.GetKeyDown(KeyCode.R) && Equipped != null && Equipped.BeginReload()) Changed?.Invoke();
             if (Input.GetKeyDown(KeyCode.E)) TryPickup();
-            if (Cursor.lockState == CursorLockMode.Locked && Current != null &&
-                (Current.Automatic ? Input.GetMouseButton(0) : Input.GetMouseButtonDown(0)))
-            {
-                if (!Current.UsesEnergy && Equipped.Magazine <= 0 && Equipped.BeginReload()) Changed?.Invoke();
-                int before = Current.UsesEnergy ? Equipped.Energy : Equipped.Magazine;
-                bool hit = WeaponRuntime.Fire(Equipped, View.transform.position, View.transform.rotation, CombatTeam.Marine);
-                int after = Current.UsesEnergy ? Equipped.Energy : Equipped.Magazine;
-                if (before != after) Changed?.Invoke();
-                if (hit) HitEnemy?.Invoke();
-            }
+            HandleFireInput();
             if (slots == null) return;
             foreach (WeaponInstance weapon in slots)
             {
@@ -89,9 +92,51 @@ namespace Harvest
             }
         }
 
+        void HandleFireInput()
+        {
+            if (Cursor.lockState != CursorLockMode.Locked || Current == null || View == null)
+            {
+                CancelCharge();
+                return;
+            }
+            if (!Current.SupportsCharge)
+            {
+                if (Current.Automatic ? Input.GetMouseButton(0) : Input.GetMouseButtonDown(0)) Fire(false);
+                return;
+            }
+            if (Input.GetMouseButtonDown(0) && Time.time >= Equipped.NextShot)
+            {
+                chargingWeapon = Equipped;
+                chargeStarted = Time.time;
+            }
+            if (!IsCharging) return;
+            if (chargingWeapon != Equipped) { CancelCharge(); return; }
+            if (Input.GetMouseButtonUp(0))
+            {
+                bool charged = ChargeFraction >= 1f && Equipped.CanCharge;
+                CancelCharge();
+                Fire(charged);
+            }
+            else if (!Input.GetMouseButton(0)) CancelCharge();
+        }
+
+        void Fire(bool charged)
+        {
+            if (!Current.UsesEnergy && Equipped.Magazine <= 0 && Equipped.BeginReload()) Changed?.Invoke();
+            int before = Current.UsesEnergy ? Equipped.Energy : Equipped.Magazine;
+            bool hit = WeaponRuntime.Fire(Equipped, View.transform.position, View.transform.rotation,
+                CombatTeam.Marine, charged);
+            int after = Current.UsesEnergy ? Equipped.Energy : Equipped.Magazine;
+            if (before != after) Changed?.Invoke();
+            if (hit) HitEnemy?.Invoke();
+        }
+
+        void CancelCharge() => chargingWeapon = null;
+
         void Select(int index)
         {
             if (slots == null || index < 0 || index >= slots.Length || index == selected) return;
+            CancelCharge();
             selected = index;
             Changed?.Invoke();
         }
@@ -112,6 +157,7 @@ namespace Harvest
             if (closest == null) return;
             WeaponInstance taken = closest.Take();
             if (taken == null) return;
+            CancelCharge();
             WeaponInstance replaced = slots[selected];
             slots[selected] = taken;
             if (replaced != null)

@@ -31,7 +31,7 @@ namespace Harvest
             Changed?.Invoke();
         }
 
-        public void ApplyDamage(float amount, float shieldMultiplier = 1f, bool bypassShield = false)
+        public void ApplyDamage(float amount, float shieldMultiplier = 1f, bool bypassShield = false, bool breaksShield = false)
         {
             if (!IsAlive || amount <= 0f) return;
             lastDamageTime = Time.time;
@@ -40,9 +40,17 @@ namespace Harvest
             bool brokeShield = false;
             if (!bypassShield && Shield > 0f && shieldMultiplier > 0f)
             {
-                float absorbed = Mathf.Min(Shield, remaining * shieldMultiplier);
-                Shield -= absorbed;
-                remaining -= absorbed / shieldMultiplier;
+                if (breaksShield)
+                {
+                    Shield = 0f;
+                    remaining = 0f; // A shield-breaking impact does not overflow into health.
+                }
+                else
+                {
+                    float absorbed = Mathf.Min(Shield, remaining * shieldMultiplier);
+                    Shield -= absorbed;
+                    remaining -= absorbed / shieldMultiplier;
+                }
                 if (Shield <= 0f)
                 {
                     brokeShield = true;

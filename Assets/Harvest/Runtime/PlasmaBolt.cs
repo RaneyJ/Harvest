@@ -9,10 +9,12 @@ namespace Harvest
         float damage;
         float shieldMultiplier;
         CombatTeam team;
+        bool breaksShield;
         float expires;
 
-        public void Initialize(Vector3 shotVelocity, CombatTeam sourceTeam, float shotDamage, float shieldDamageMultiplier)
+        public void Initialize(Vector3 shotVelocity, CombatTeam sourceTeam, float shotDamage, float shieldDamageMultiplier, bool shotBreaksShield = false)
         {
+            breaksShield = shotBreaksShield;
             velocity = shotVelocity;
             team = sourceTeam;
             damage = shotDamage;
@@ -28,7 +30,7 @@ namespace Harvest
             if (step.sqrMagnitude <= 0f) return;
             if (Physics.Raycast(start, step.normalized, out RaycastHit hit, step.magnitude, ~0, QueryTriggerInteraction.Ignore))
             {
-                WeaponRuntime.ApplyHit(hit.collider, team, damage, shieldMultiplier, start);
+                WeaponRuntime.ApplyHit(hit.collider, team, damage, shieldMultiplier, start, breaksShield);
                 Destroy(gameObject);
                 return;
             }
