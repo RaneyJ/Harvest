@@ -115,6 +115,25 @@ namespace Harvest.Editor
                 Expect(pressure.AccuracyPenaltyDegrees, 0f, "Reset clears accuracy loss");
                 Expect(vitality.Health, vitality.MaxHealth, "Exposure itself does not damage health");
 
+                MarineArmor armor = actor.AddComponent<MarineArmor>();
+                pressure.AddPressure(0.4f);
+                Expect(pressure.Value, 0.24f, "Intact armor reduces incoming pressure");
+                pressure.ResetPressure();
+                Vector3 reportedOrigin = Vector3.zero;
+                armor.DamageReceived += origin => reportedOrigin = origin;
+                armor.ApplyDamage(armor.MaxArmor, center + Vector3.right);
+                Expect(Vector3.Distance(reportedOrigin, center + Vector3.right), 0f, "Damage retains attack origin");
+                pressure.AddPressure(0.4f);
+                Expect(pressure.Value, 0.5f, "Broken armor increases incoming pressure");
+                armor.RestoreArmor(20f);
+                pressure.ResetPressure();
+                pressure.AddPressure(0.4f);
+                Expect(pressure.Value, 0.24f, "Armor pickup restores pressure protection");
+                Expect(PlayerDamageFeedback.Bearing(Vector3.forward, Vector3.right, Vector3.right), 90f, "Right hit bearing");
+                Expect(PlayerDamageFeedback.RedStrength(0f, 1f, 0.12f, 0.65f), 0.12f, "Breach tint at full health");
+                Expect(PlayerDamageFeedback.RedStrength(0f, 0f, 0.12f, 0.65f), 0.65f, "Critical health tint");
+                Expect(PlayerDamageFeedback.RedStrength(1f, 0f, 0.12f, 0.65f), 0f, "Restored armor clears red tint");
+
                 Debug.Log("Combat regression checks passed: faction/range filters, per-projectile and per-pellet limits, cover impacts, cooldown/ammo rejection, silent buildup, threshold ramp, pressure cap/reset.");
             }
             catch (Exception error) { Debug.LogException(error); }

@@ -14,6 +14,8 @@ namespace Harvest
         [Min(0f)] public float RecoveryPerSecond = 0.25f;
         [Min(0f)] public float MaxAccuracyPenaltyDegrees = 5f;
         [Range(0f, 0.95f)] public float EffectThreshold = 0.5f;
+        [Range(0f, 1f)] public float ArmoredPressureMultiplier = 0.6f;
+        [Min(1f)] public float ExposedPressureMultiplier = 1.25f;
         public float Value { get; private set; }
         // Pressure can accumulate silently. All effects share this remapped strength.
         public float EffectStrength => Value <= EffectThreshold ? 0f : Mathf.SmoothStep(0f, 1f,
@@ -22,14 +24,17 @@ namespace Harvest
 
         CombatTarget identity;
         Collider body;
+        MarineArmor armor;
         float lastThreatTime;
 
-        void Awake() { identity = GetComponent<CombatTarget>(); body = GetComponent<Collider>(); }
+        void Awake() { identity = GetComponent<CombatTarget>(); body = GetComponent<Collider>(); armor = GetComponent<MarineArmor>(); }
         public void ResetPressure() { Value = 0f; lastThreatTime = float.NegativeInfinity; }
         public void AddPressure(float amount)
         {
             if (!identity.IsAlive || !isActiveAndEnabled || amount <= 0f) return;
-            Value = Mathf.Clamp01(Value + amount);
+            if (armor == null) armor = GetComponent<MarineArmor>();
+            float multiplier = armor == null ? 1f : armor.Armor > 0f ? ArmoredPressureMultiplier : ExposedPressureMultiplier;
+            Value = Mathf.Clamp01(Value + amount * multiplier);
             lastThreatTime = Time.time;
         }
         void Update()

@@ -14,6 +14,8 @@ namespace Harvest
         public float Armor { get; private set; }
         public event Action Changed;
         public event Action ArmorBroken;
+        public event Action ArmorReset;
+        public event Action<Vector3> DamageReceived;
         public event Action<bool> Hit; // true when health was exposed
         public event Action<float> ArmorRestored;
 
@@ -30,10 +32,11 @@ namespace Harvest
         {
             Armor = MaxArmor;
             lastDamageTime = Time.time;
+            ArmorReset?.Invoke();
             Changed?.Invoke();
         }
 
-        public void ApplyDamage(float amount)
+        public void ApplyDamage(float amount, Vector3? sourcePosition = null)
         {
             if (amount <= 0f || !vitality.IsAlive) return;
             lastDamageTime = Time.time;
@@ -41,6 +44,7 @@ namespace Harvest
             Armor -= absorbed;
             float exposed = amount - absorbed;
             if (absorbed > 0f && Armor <= 0f) ArmorBroken?.Invoke();
+            if (sourcePosition.HasValue) DamageReceived?.Invoke(sourcePosition.Value);
             if (exposed > 0f) vitality.ApplyDamage(exposed);
             Changed?.Invoke();
             Hit?.Invoke(exposed > 0f);

@@ -73,3 +73,11 @@ During Play mode, **Harvest > Run Combat Regression Checks (Play Mode)** exercis
 **Harvest > Run Grenade and Melee Checks (Play Mode)** checks radial suppression/cover, self and friendly damage, one blast application per actor, melee visibility/cooldown, two-per-type capacity, refill/selection, and rejected throws. Play-test real bounce trajectories, plasma adhesion to moving/dead targets, fuses, walk-over supplies, and weapon/action feedback separately.
 
 No Unity Editor is available in the authoring environment, so the changes have had source inspection but not an Editor import or play test. Report any import error with the Unity Console output.
+
+### Armor pressure and damage feedback
+
+Intact marine armor scales incoming suppression to 60%; broken armor scales it to 125%. This applies to bullets and grenade pressure for player and allied marines; the existing activation threshold and pressure cap remain. Supplies restore the protection as soon as armor is positive. Both multipliers are editable on Suppression.
+
+Player damage shows fading red direction bars around the reticle, tracking world attack origins as the view turns. Up means forward; right means right; down means behind. Up to eight recent hits can display together. A red edge vignette appears while armor is broken, increasing from 12% at full health to 65% at zero health and fading with regeneration or armor restoration. The center remains clear; handoff resets feedback. Bullets, melee, Brute strikes, and grenades carry their source positions through shared damage resolution.
+
+Frag bounce is reduced from 0.55 to 0.22 and uses Average bounce combination. Rebuilding also updates the existing generated frag physics material. Run **Harvest > Build The Line Prototype** to add the camera feedback and migrate bounce. **Harvest > Run Combat Regression Checks (Play Mode)** now also covers armor pressure multipliers, damage origin, directional bearing, and red tint scaling. These Editor checks and rendering/physics still require a Unity play test.

@@ -12,7 +12,7 @@ namespace Harvest
                 (target.Team == sourceTeam && target != selfDamageOwner)) return false;
             CovenantEnemy enemy = target.GetComponent<CovenantEnemy>();
             if (enemy != null) enemy.ReceiveWeaponHit(amount, shieldMultiplier, origin, breaksShield);
-            else if (target.GetComponent<MarineArmor>() is MarineArmor armor) armor.ApplyDamage(amount);
+            else if (target.GetComponent<MarineArmor>() is MarineArmor armor) armor.ApplyDamage(amount, origin);
             else target.GetComponent<Vitality>().ApplyDamage(amount, shieldMultiplier, false, breaksShield);
             return true;
         }

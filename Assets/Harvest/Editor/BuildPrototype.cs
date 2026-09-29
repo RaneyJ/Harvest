@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "9";
+        const string SceneVersion = "10";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates melee and grenade combat. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
+                    "This scene predates directional damage feedback. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -153,6 +153,9 @@ namespace Harvest.Editor
             marine.View = camera;
             loadout.View = camera;
             actions.View = camera;
+            PlayerDamageFeedback feedback = view.AddComponent<PlayerDamageFeedback>();
+            feedback.Armor = marineArmor;
+            feedback.View = camera;
             GameObject rifle = Block("Service rifle silhouette", human, new Vector3(0, 0, 0), new Vector3(0.13f, 0.14f, 0.65f));
             rifle.transform.SetParent(view.transform, false);
             rifle.transform.localPosition = new Vector3(0.36f, -0.33f, 0.7f);
@@ -434,6 +437,7 @@ namespace Harvest.Editor
 
         static GrenadeDefinition MakeGrenade(string name, GrenadeKind kind, Material material, GrenadeExplosionVisual explosion)
         {
+            PhysicsMaterial physics = MakeGrenadePhysics(name, kind);
             string path = $"Assets/Harvest/Data/{name} Grenade.asset";
             GrenadeDefinition definition = AssetDatabase.LoadAssetAtPath<GrenadeDefinition>(path);
             if (definition == null)
@@ -468,7 +472,7 @@ namespace Harvest.Editor
                     body.angularDamping = 0.1f;
                     body.interpolation = RigidbodyInterpolation.Interpolate;
                     body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-                    root.GetComponent<SphereCollider>().sharedMaterial = MakeGrenadePhysics(name, kind);
+                    root.GetComponent<SphereCollider>().sharedMaterial = physics;
                     root.AddComponent<GrenadeProjectile>().Definition = definition;
                     GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
                     Object.DestroyImmediate(root);
@@ -483,12 +487,21 @@ namespace Harvest.Editor
         {
             string path = $"Assets/Harvest/Materials/{name} Grenade Bounce.physicMaterial";
             PhysicsMaterial existing = AssetDatabase.LoadAssetAtPath<PhysicsMaterial>(path);
-            if (existing != null) return existing;
+            if (existing != null)
+            {
+                if (kind == GrenadeKind.Frag)
+                {
+                    existing.bounciness = 0.22f;
+                    existing.bounceCombine = PhysicsMaterialCombine.Average;
+                    EditorUtility.SetDirty(existing);
+                }
+                return existing;
+            }
             PhysicsMaterial material = new PhysicsMaterial(name + " Grenade Bounce");
-            material.bounciness = kind == GrenadeKind.Frag ? 0.55f : 0.1f;
+            material.bounciness = kind == GrenadeKind.Frag ? 0.22f : 0.1f;
             material.dynamicFriction = 0.45f;
             material.staticFriction = 0.5f;
-            material.bounceCombine = PhysicsMaterialCombine.Maximum;
+            material.bounceCombine = kind == GrenadeKind.Frag ? PhysicsMaterialCombine.Average : PhysicsMaterialCombine.Maximum;
             AssetDatabase.CreateAsset(material, path);
             return material;
         }

@@ -65,7 +65,7 @@ namespace Harvest
             {
                 if (distance < MeleeRange && hasLineOfSight)
                 {
-                    target.GetComponent<MarineArmor>()?.ApplyDamage(MeleeDamage);
+                    CombatDamage.Apply(target, CombatTeam.Covenant, MeleeDamage, transform.position);
                     Recover();
                 }
                 else if (Time.time >= phaseUntil) Recover();
