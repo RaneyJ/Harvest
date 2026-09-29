@@ -95,6 +95,18 @@ namespace Harvest.Editor
                     Quaternion.LookRotation(Vector3.right), CombatTeam.Marine);
                 Expect(pressure.Value, 0f, "Empty energy weapons create no suppression");
 
+                for (int shot = 0; shot < 3; shot++) pressure.AddPressure(pressure.PressurePerShot);
+                Expect(pressure.EffectStrength, 0f, "Three brief shots accumulate silently");
+                Expect(pressure.AccuracyPenaltyDegrees, 0f, "Brief fire does not impair accuracy");
+                pressure.AddPressure(pressure.PressurePerShot);
+                if (pressure.EffectStrength <= 0f || pressure.EffectStrength >= 1f)
+                    throw new Exception("Sustained fire should begin effects gradually above the threshold.");
+                pressure.ResetPressure();
+                pressure.AddPressure(pressure.EffectThreshold);
+                Expect(pressure.EffectStrength, 0f, "Effects stay off at the activation threshold");
+                pressure.AddPressure(0.01f);
+                if (pressure.EffectStrength <= 0f || pressure.EffectStrength >= 0.01f)
+                    throw new Exception("Effects should ease in gently just above the threshold.");
                 for (int shot = 0; shot < 100; shot++) pressure.AddPressure(pressure.PressurePerShot);
                 Expect(pressure.Value, 1f, "Sustained fire caps at maximum pressure");
                 Expect(pressure.AccuracyPenaltyDegrees, pressure.MaxAccuracyPenaltyDegrees, "Accuracy loss is capped");
@@ -102,7 +114,7 @@ namespace Harvest.Editor
                 Expect(pressure.AccuracyPenaltyDegrees, 0f, "Reset clears accuracy loss");
                 Expect(vitality.Health, vitality.MaxHealth, "Exposure itself does not damage health");
 
-                Debug.Log("Combat regression checks passed: faction/range filters, per-projectile and per-pellet limits, cover impacts, cooldown/ammo rejection, pressure cap/reset.");
+                Debug.Log("Combat regression checks passed: faction/range filters, per-projectile and per-pellet limits, cover impacts, cooldown/ammo rejection, silent buildup, threshold ramp, pressure cap/reset.");
             }
             catch (Exception error) { Debug.LogException(error); }
             finally

@@ -13,8 +13,12 @@ namespace Harvest
         [Min(0f)] public float RecoveryDelay = 1.5f;
         [Min(0f)] public float RecoveryPerSecond = 0.25f;
         [Min(0f)] public float MaxAccuracyPenaltyDegrees = 5f;
+        [Range(0f, 0.95f)] public float EffectThreshold = 0.5f;
         public float Value { get; private set; }
-        public float AccuracyPenaltyDegrees => Value * MaxAccuracyPenaltyDegrees;
+        // Pressure can accumulate silently. All effects share this remapped strength.
+        public float EffectStrength => Value <= EffectThreshold ? 0f : Mathf.SmoothStep(0f, 1f,
+            Mathf.Clamp01((Value - EffectThreshold) / Mathf.Max(0.01f, 1f - EffectThreshold)));
+        public float AccuracyPenaltyDegrees => EffectStrength * MaxAccuracyPenaltyDegrees;
 
         CombatTarget identity;
         Collider body;
