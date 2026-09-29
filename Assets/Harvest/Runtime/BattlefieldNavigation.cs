@@ -34,6 +34,18 @@ namespace Harvest
                     area = 0
                 });
             }
+            foreach (MeshCollider mesh in FindObjectsByType<MeshCollider>(FindObjectsSortMode.None))
+            {
+                if (!mesh.enabled || mesh.isTrigger || mesh.sharedMesh == null ||
+                    mesh.GetComponentInParent<CombatTarget>() != null) continue;
+                sources.Add(new NavMeshBuildSource
+                {
+                    shape = NavMeshBuildSourceShape.Mesh,
+                    transform = mesh.transform.localToWorldMatrix,
+                    sourceObject = mesh.sharedMesh,
+                    area = 0
+                });
+            }
             NavMeshBuildSettings settings = NavMesh.GetSettingsByIndex(0);
             settings.agentRadius = 0.4f;
             settings.agentHeight = 1.9f;

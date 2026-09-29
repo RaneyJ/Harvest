@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "10";
+        const string SceneVersion = "11";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates directional damage feedback. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
+                    "This scene predates the farmhouse, terrain, and hitscan tracers. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -60,21 +60,7 @@ namespace Harvest.Editor
             Material armorMaterial = MakeMaterial("Armor Supply", new Color(0.24f, 0.67f, 0.49f), true);
             Material beacon = MakeMaterial("Evac Beacon", new Color(0.17f, 0.9f, 0.35f), true);
 
-            Block("Field", soil, new Vector3(0, -0.55f, 10), new Vector3(130, 1, 150));
-            Block("Road", road, new Vector3(0, -0.02f, 10), new Vector3(15, 0.1f, 130));
-            for (int side = -1; side <= 1; side += 2)
-            {
-                for (int row = 0; row < 16; row++)
-                {
-                    for (int col = 0; col < 5; col++)
-                    {
-                        float x = side * (10f + col * 3.1f);
-                        float z = -42f + row * 6f;
-                        GameObject crop = Block("Harvest crop", grain, new Vector3(x, 0.65f, z), new Vector3(0.55f, 1.3f, 4.1f));
-                        Object.DestroyImmediate(crop.GetComponent<Collider>());
-                    }
-                }
-            }
+            FarmEncounterGeometry.Build(soil, road, grain, concrete, rust);
             // Waist-high cover with open lanes. Everything is ordinary farm or freight infrastructure.
             Block("Checkpoint barricade left", concrete, new Vector3(-5, 0.7f, -7), new Vector3(4.5f, 1.4f, 1.3f));
             Block("Checkpoint barricade right", concrete, new Vector3(5, 0.7f, -7), new Vector3(4.5f, 1.4f, 1.3f));
@@ -87,7 +73,6 @@ namespace Harvest.Editor
             new GameObject("Battlefield navigation").AddComponent<BattlefieldNavigation>();
             Block("Cargo left", rust, new Vector3(-7, 1.4f, 10), new Vector3(3, 2.8f, 4));
             Block("Cargo right", rust, new Vector3(8, 1.1f, 17), new Vector3(3, 2.2f, 5));
-            Block("Loading station", concrete, new Vector3(-20, 4, 10), new Vector3(8, 8, 12));
             Block("Freight tower", rust, new Vector3(23, 7, 27), new Vector3(4, 14, 4));
             Block("Road barrier", concrete, new Vector3(3, 0.6f, 8), new Vector3(3, 1.2f, 1));
             Block("Road barrier", concrete, new Vector3(-3, 0.6f, 19), new Vector3(3, 1.2f, 1));
@@ -175,6 +160,7 @@ namespace Harvest.Editor
             weaponView.Models = new[] { rifle, shotgun, pistolModel, rifleModel };
 
             GameObject director = new GameObject("Encounter Director");
+            director.AddComponent<HitscanTracerRenderer>().TracerMaterial = MakeTracerMaterial();
             HarvestEncounter encounter = director.AddComponent<HarvestEncounter>();
             encounter.Marine = marine;
             encounter.Definition = encounterData;
@@ -706,6 +692,16 @@ namespace Harvest.Editor
         static EnemySpawn Spawn(CovenantEnemy prefab, float x, float z)
         {
             return new EnemySpawn { Prefab = prefab, Position = new Vector3(x, prefab.GetComponent<CharacterController>().height / 2f, z) };
+        }
+
+        static Material MakeTracerMaterial()
+        {
+            const string path = "Assets/Harvest/Materials/Hitscan Tracer.mat";
+            Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (existing != null) return existing;
+            Material material = new Material(Shader.Find("Sprites/Default"));
+            AssetDatabase.CreateAsset(material, path);
+            return material;
         }
 
         static Material MakeMaterial(string name, Color color, bool glowing = false)

@@ -8,6 +8,9 @@ namespace Harvest
     // A shared firing and damage path. Input, enemy AI, and later allied marine AI call this.
     public static class WeaponRuntime
     {
+        public static event System.Action<WeaponDefinition, Vector3, Vector3> HitscanFired;
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetPresentation() => HitscanFired = null;
         public static bool Fire(WeaponInstance weapon, Vector3 origin, Quaternion aim, CombatTeam team, bool charged = false, Suppression shooter = null)
         {
             if (weapon == null || !weapon.TryConsumeShot(charged)) return false;
@@ -40,6 +43,7 @@ namespace Harvest
                         hitOpponent |= ApplyHit(hit.collider, team, damage, definition.ShieldMultiplier, origin, charged);
                     }
                     else Suppression.ObserveSegment(origin, end, team, exposures, false);
+                    HitscanFired?.Invoke(definition, origin, end);
                 }
             }
             if (exposures != null) Suppression.ApplyExposures(exposures);

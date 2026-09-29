@@ -25,6 +25,11 @@ namespace Harvest
         public PlasmaBolt ProjectilePrefab;
         [Min(1f)] public float ProjectileSpeed = 17f;
         public Material PickupMaterial;
+        [Header("Hitscan tracers")]
+        public bool ShowTracers = true;
+        public Color TracerColor = new Color(1f, 0.8f, 0.35f);
+        [Min(0.001f)] public float TracerWidth = 0.025f;
+        [Min(0.01f)] public float TracerLifetime = 0.08f;
         [Header("Charged shot")]
         public bool SupportsCharge;
         [Min(0.01f)] public float ChargeSeconds = 1f;
