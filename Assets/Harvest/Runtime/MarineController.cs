@@ -18,6 +18,7 @@ namespace Harvest
         public Vitality Vitality { get; private set; }
 
         CharacterController controller;
+        WeaponRecoil recoil;
         HarvestEncounter encounter;
         float verticalVelocity;
         float pitch;
@@ -29,6 +30,7 @@ namespace Harvest
         void Awake()
         {
             controller = GetComponent<CharacterController>();
+            recoil = GetComponent<WeaponRecoil>();
             standingHeight = controller.height;
             standingStepOffset = controller.stepOffset;
             standingCenter = controller.center;
@@ -75,7 +77,9 @@ namespace Harvest
             {
                 transform.Rotate(Vector3.up, Input.GetAxisRaw("Mouse X") * MouseSensitivity);
                 pitch = Mathf.Clamp(pitch - Input.GetAxisRaw("Mouse Y") * MouseSensitivity, -85f, 85f);
-                View.transform.localRotation = Quaternion.Euler(pitch, 0f, 0f);
+                float kick = recoil != null ? recoil.Pitch : 0f;
+                float yaw = recoil != null ? recoil.Yaw : 0f;
+                View.transform.localRotation = Quaternion.Euler(Mathf.Clamp(pitch - kick, -85f, 85f), yaw, 0f);
             }
             bool wantsCrouch = Cursor.lockState == CursorLockMode.Locked && Input.GetKey(KeyCode.LeftControl);
             if (wantsCrouch) SetCrouched(true);

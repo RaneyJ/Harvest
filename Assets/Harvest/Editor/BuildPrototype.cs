@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "12";
+        const string SceneVersion = "13";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the hunting rifle and precision aiming. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
+                    "This scene predates weapon recoil and combat presentation polish. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -92,6 +92,11 @@ namespace Harvest.Editor
             PlasmaBolt bolt = MakeBoltPrefab(plasma);
             WeaponDefinition plasmaPistol = MakePlasmaWeapon("Plasma Pistol", 20f, 1.7f, 2, 0.55f, 17f, false, bolt, plasma);
             WeaponDefinition plasmaRifle = MakePlasmaWeapon("Plasma Rifle", 12f, 1.25f, 3, 0.13f, 22f, true, bolt, plasmaRifleColor);
+            ConfigureFeedback(rifleData, 1.1f, 0.25f, 0.045f, 3f);
+            ConfigureFeedback(shotgunData, 3.3f, 0.45f, 0.09f, 7f);
+            ConfigureFeedback(huntingRifle, 4f, 0.25f, 0.1f, 8f);
+            ConfigureFeedback(plasmaPistol, 0.5f, 0.15f, 0.03f, 2f);
+            ConfigureFeedback(plasmaRifle, 0.45f, 0.2f, 0.025f, 1.5f);
             GrenadeExplosionVisual explosion = MakeGrenadeExplosionPrefab();
             GrenadeDefinition fragData = MakeGrenade("Frag", GrenadeKind.Frag, human, explosion);
             GrenadeDefinition plasmaGrenadeData = MakeGrenade("Plasma", GrenadeKind.Plasma, plasma, explosion);
@@ -147,6 +152,7 @@ namespace Harvest.Editor
             actions.View = camera;
             PrecisionAim precisionAim = player.AddComponent<PrecisionAim>();
             precisionAim.View = camera;
+            player.AddComponent<WeaponRecoil>();
             PlayerDamageFeedback feedback = view.AddComponent<PlayerDamageFeedback>();
             feedback.Armor = marineArmor;
             feedback.View = camera;
@@ -170,7 +176,9 @@ namespace Harvest.Editor
             weaponView.Models = new[] { rifle, shotgun, pistolModel, rifleModel, hunterModel };
 
             GameObject director = new GameObject("Encounter Director");
-            director.AddComponent<HitscanTracerRenderer>().TracerMaterial = MakeTracerMaterial();
+            Material combatMaterial = MakeTracerMaterial();
+            director.AddComponent<HitscanTracerRenderer>().TracerMaterial = combatMaterial;
+            director.AddComponent<CombatEffects>().EffectMaterial = combatMaterial;
             HarvestEncounter encounter = director.AddComponent<HarvestEncounter>();
             encounter.Marine = marine;
             encounter.Definition = encounterData;
@@ -450,6 +458,14 @@ namespace Harvest.Editor
                 changed = true;
             }
             return changed;
+        }
+        static void ConfigureFeedback(WeaponDefinition definition, float pitch, float yaw, float distance, float rotation)
+        {
+            if (definition.FeedbackRevision >= 1) return;
+            definition.RecoilPitch = pitch; definition.RecoilYaw = yaw;
+            definition.ModelKickDistance = distance; definition.ModelKickDegrees = rotation;
+            definition.FeedbackRevision = 1;
+            EditorUtility.SetDirty(definition);
         }
         static WeaponDefinition MakeHuntingRifle(Material stock)
         {

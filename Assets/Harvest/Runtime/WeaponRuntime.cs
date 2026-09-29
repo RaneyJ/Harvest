@@ -9,12 +9,15 @@ namespace Harvest
     public static class WeaponRuntime
     {
         public static event System.Action<WeaponDefinition, Vector3, Vector3> HitscanFired;
+        public static event System.Action<WeaponDefinition, Vector3, Vector3, CombatTeam> ShotPresented;
+        public static event System.Action<Vector3, Vector3, CombatImpactKind> ImpactPresented;
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetPresentation() => HitscanFired = null;
+        static void ResetPresentation() { HitscanFired = null; ShotPresented = null; ImpactPresented = null; }
         public static bool Fire(WeaponInstance weapon, Vector3 origin, Quaternion aim, CombatTeam team, bool charged = false, Suppression shooter = null, bool aimingDownSights = false)
         {
             if (weapon == null || !weapon.TryConsumeShot(charged)) return false;
             WeaponDefinition definition = weapon.Definition;
+            ShotPresented?.Invoke(definition, origin, aim * Vector3.forward, team);
             float damage = charged ? definition.ChargedDamage : definition.DamagePerPellet;
             float spread = Spread(definition, shooter, aimingDownSights);
             var exposures = definition.ShotKind == WeaponShotKind.Hitscan ? new Dictionary<Suppression, float>() : null;
@@ -38,6 +41,7 @@ namespace Harvest
                     if (Physics.Raycast(origin, direction, out RaycastHit hit, definition.Range, ~0, QueryTriggerInteraction.Ignore))
                     {
                         end = hit.point;
+                        PresentImpact(hit, origin);
                         // Observe before damage so a lethal impact still uses the living target's body.
                         Suppression.ObserveSegment(origin, end, team, exposures, false);
                         float hitDamage = definition.IsPrecision ? PrecisionHitRegion.ResolveDamage(hit.collider, hit.point, damage) : damage;
@@ -49,6 +53,20 @@ namespace Harvest
             }
             if (exposures != null) Suppression.ApplyExposures(exposures);
             return hitOpponent;
+        }
+
+        public static void PresentImpact(RaycastHit hit, Vector3 origin)
+        {
+            CombatTarget target = hit.collider.GetComponentInParent<CombatTarget>();
+            CombatImpactKind kind = CombatImpactKind.World;
+            if (target != null)
+            {
+                MarineArmor armor = target.GetComponent<MarineArmor>();
+                JackalBehavior jackal = target.GetComponent<JackalBehavior>();
+                bool shield = target.GetComponent<Vitality>().Shield > 0f && (jackal == null || !jackal.IsFlanked(origin));
+                kind = shield ? CombatImpactKind.Shield : armor != null && armor.Armor > 0f ? CombatImpactKind.Armor : CombatImpactKind.Flesh;
+            }
+            ImpactPresented?.Invoke(hit.point, hit.normal, kind);
         }
 
         public static float Spread(WeaponDefinition definition, Suppression shooter, bool aimingDownSights) =>

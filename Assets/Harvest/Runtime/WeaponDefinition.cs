@@ -25,6 +25,12 @@ namespace Harvest
         public PlasmaBolt ProjectilePrefab;
         [Min(1f)] public float ProjectileSpeed = 17f;
         public Material PickupMaterial;
+        [HideInInspector] public int FeedbackRevision;
+        [Header("Weapon feedback")]
+        [Min(0f)] public float RecoilPitch = 1.1f;
+        [Min(0f)] public float RecoilYaw = 0.25f;
+        [Min(0f)] public float ModelKickDistance = 0.045f;
+        [Min(0f)] public float ModelKickDegrees = 3f;
         [Header("Hitscan tracers")]
         public bool ShowTracers = true;
         public Color TracerColor = new Color(1f, 0.8f, 0.35f);

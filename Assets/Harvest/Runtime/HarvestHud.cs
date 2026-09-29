@@ -111,6 +111,23 @@ namespace Harvest
             GUI.color = Color.white;
             GUI.Box(new Rect(16, 16, 390, 106), $"{status}\n{callSign}   |   MARINES LEFT: {marinesLeft}\nHOSTILES: {hostiles}   |   SQUAD: {Encounter.AlliesAlive}");
             GUI.Box(new Rect(16, Screen.height - 116, 245, 94), $"ARMOR  {armor} / {Mathf.CeilToInt(Armor.MaxArmor)}\nHEALTH  {health}\n{weapon.ToUpperInvariant()}  {ammo}");
+            if (Loadout.Equipped != null && Loadout.Current != null)
+            {
+                WeaponInstance equipped = Loadout.Equipped;
+                bool reloading = equipped.ReloadUntil > Time.time;
+                bool cycling = !reloading && Loadout.Current.IsPrecision && equipped.NextShot > Time.time;
+                if (reloading || cycling)
+                {
+                    float remaining = (reloading ? equipped.ReloadUntil : equipped.NextShot) - Time.time;
+                    float duration = reloading ? Loadout.Current.ReloadSeconds : Loadout.Current.FireInterval;
+                    float progress = Mathf.Clamp01(1f - remaining / Mathf.Max(0.01f, duration));
+                    float center = Screen.width * 0.5f;
+                    GUI.Box(new Rect(center - 90f, Screen.height - 68f, 180f, 42f), reloading ? "RELOADING" : "CYCLING BOLT");
+                    GUI.color = new Color(0.8f, 0.85f, 0.7f);
+                    GUI.DrawTexture(new Rect(center - 80f, Screen.height - 37f, 160f * progress, 3f), Texture2D.whiteTexture);
+                    GUI.color = Color.white;
+                }
+            }
             if (grenades != null)
                 GUI.Box(new Rect(16, Screen.height - 162, 245, 42),
                     $"FRAG {grenades.Count(GrenadeKind.Frag)}   |   PLASMA {grenades.Count(GrenadeKind.Plasma)}\n[G] {grenades.Selected.ToString().ToUpperInvariant()}   [Q] SWITCH");
@@ -123,7 +140,16 @@ namespace Harvest
                 float x = Screen.width * 0.5f;
                 float y = Screen.height * 0.5f;
                 GUI.color = Time.time < hitMarkerUntil ? Color.red : Color.white;
-                if (aim == null || !aim.IsAiming) GUI.Label(new Rect(x - 8f, y - 12f, 30f, 30f), "+");
+                if (aim == null || !aim.IsAiming)
+                {
+                    float spread = Loadout.Current != null ? WeaponRuntime.Spread(Loadout.Current, suppression, false) : 0f;
+                    float gap = 5f + Mathf.Min(25f, spread * 3f);
+                    GUI.DrawTexture(new Rect(x - gap - 5f, y - 1f, 5f, 2f), Texture2D.whiteTexture);
+                    GUI.DrawTexture(new Rect(x + gap, y - 1f, 5f, 2f), Texture2D.whiteTexture);
+                    GUI.DrawTexture(new Rect(x - 1f, y - gap - 5f, 2f, 5f), Texture2D.whiteTexture);
+                    GUI.DrawTexture(new Rect(x - 1f, y + gap, 2f, 5f), Texture2D.whiteTexture);
+                    if (Time.time < hitMarkerUntil) GUI.Label(new Rect(x - 8f, y - 12f, 30f, 30f), "×");
+                }
                 else if (Time.time < hitMarkerUntil) GUI.Label(new Rect(x - 8f, y - 12f, 30f, 30f), "×");
                 if (Loadout.Current != null && Loadout.Current.IsPrecision)
                 {
