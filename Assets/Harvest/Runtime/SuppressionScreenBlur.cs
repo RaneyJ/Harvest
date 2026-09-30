@@ -8,9 +8,11 @@ namespace Harvest
     {
         public Suppression State;
         public Shader BlurShader;
-        // Retained for existing scene serialization; URP uses a single full-resolution pass.
+        // Retained for existing scene serialization; URP uses full-resolution copy and overlay passes.
         [HideInInspector] public int Downsample = 2;
         [Range(0f, 12f)] public float MaxBlurRadius = 2.5f;
+        [Tooltip("Scales the stored blur radius in pixels. Higher values soften a wider area without increasing opacity.")]
+        [Range(0f, 4f)] public float BlurRadiusMultiplier = 3f;
         [Range(0f, 0.45f)] public float MaxBlend = 0.45f;
         [Min(0.1f)] public float FollowSpeed = 8f;
         public float VisiblePressure { get; private set; }

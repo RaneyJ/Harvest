@@ -74,7 +74,7 @@ namespace Harvest
                     data.Source = copy;
                     data.Material = material;
                     data.ShaderPass = state.DiagnosticCopyOnly ? 0 : 1;
-                    data.Settings = new Vector4(state.VisiblePressure * Mathf.Max(0f, state.MaxBlurRadius),
+                    data.Settings = new Vector4(state.VisiblePressure * Mathf.Max(0f, state.MaxBlurRadius) * Mathf.Clamp(state.BlurRadiusMultiplier, 0f, 4f),
                         state.VisiblePressure * Mathf.Clamp(state.MaxBlend, 0f, 0.45f),
                         1f / Mathf.Max(1, descriptor.width), 1f / Mathf.Max(1, descriptor.height));
                     builder.UseTexture(copy, AccessFlags.Read);
