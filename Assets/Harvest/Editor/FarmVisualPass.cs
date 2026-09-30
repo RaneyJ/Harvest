@@ -85,8 +85,9 @@ namespace Harvest.Editor
         static void Background()
         {
             Transform root = new GameObject("Distant farm landscape — presentation only").transform;
-            Material hills = WeaponModelGeometry.MaterialFor("Distant Hills", new Color(0.22f, 0.29f, 0.27f));
-            Material buildings = WeaponModelGeometry.MaterialFor("Distant Settlement", new Color(0.31f, 0.32f, 0.30f));
+            Material hills = AssetDatabase.LoadAssetAtPath<Material>("Assets/Harvest/Materials/Soil.mat");
+            Material buildings = AssetDatabase.LoadAssetAtPath<Material>("Assets/Harvest/Materials/Concrete.mat");
+            if (hills == null || buildings == null) return;
             // A visual ground apron joins the playable terrain to the horizon; never baked into navigation.
             GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
             ground.name = "Distant ground apron"; ground.transform.SetParent(root, false);
@@ -95,17 +96,6 @@ namespace Harvest.Editor
             ground.GetComponent<Renderer>().sharedMaterial = hills;
             ground.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
             Object.DestroyImmediate(ground.GetComponent<Collider>());
-            for (int i = 0; i < 14; i++)
-            {
-                float angle = i * Mathf.PI * 2f / 14f;
-                GameObject hill = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                hill.name = "Horizon ridge"; hill.transform.SetParent(root, false);
-                hill.transform.position = new Vector3(Mathf.Cos(angle) * 165f, -12f, Mathf.Sin(angle) * 165f);
-                hill.transform.localScale = new Vector3(95f, 35f + i % 4 * 7f, 75f);
-                hill.GetComponent<Renderer>().sharedMaterial = hills;
-                hill.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
-                Object.DestroyImmediate(hill.GetComponent<Collider>());
-            }
             for (int i = 0; i < 7; i++)
             {
                 GameObject building = GameObject.CreatePrimitive(PrimitiveType.Cube);

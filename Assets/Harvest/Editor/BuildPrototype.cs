@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "20";
+        const string SceneVersion = "21";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]

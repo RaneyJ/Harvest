@@ -5,7 +5,7 @@ The Line now targets Unity 6000.3 / URP 17.3 with Render Graph enabled and linea
 ## Pull and rebuild
 
 1. Let Unity Package Manager resolve URP after pulling `prototype/the-line`.
-2. Save manual scene changes, then run **Harvest > Build The Line Prototype**. Version 20 rebuilds the generated scene, creates persistent rendering assets and migrates Harvest Standard materials in place. Weapon tuning, audio and configured waves remain on their existing assets.
+2. Save manual scene changes, then run **Harvest > Build The Line Prototype**. Version 21 rebuilds the generated scene, creates persistent rendering assets and migrates Harvest Standard materials in place. Weapon tuning, audio and configured waves remain on their existing assets.
 3. Run **Harvest > Validate Visual Foundation**. Check the Console for shader errors.
 4. In Play mode inspect farmhouse interiors, shadows, rifle tracers, plasma, grenade fading, armor/charge tint feedback and sustained-fire suppression. Also check upstairs movement, cover and all waves. The build environment used for this change has no Unity Editor; these runtime and visual checks still need to be run in Unity.
 
@@ -16,7 +16,7 @@ The Line now targets Unity 6000.3 / URP 17.3 with Render Graph enabled and linea
 - `Harvest Post.asset` contains editable ACES tone mapping, bloom, grading and vignette. Volume changes update in the scene without a rebuild; the scene builder preserves this asset.
 - `Harvest Sky.mat` controls the procedural sky. `Harvest URP.asset` controls shadow quality and rendering budgets.
 - `HarvestSurfaceLibrary` creates deterministic tiled starter textures at editor time. The farm shader maps them in world space to avoid stretched walls. This is placeholder texture work, not scanned/PBR final art. Materials already carrying authored textures are preserved.
-- `FarmVisualPass` owns lighting and distant scenery. Distant objects have no colliders and do not extend the combat/navmesh bounds. Two unshadowed interior lights, one 128px reflection probe refreshed on scene load, four sun cascades and a single suppression pass establish a bounded starting budget. Nothing here is a measured performance guarantee.
+- `FarmVisualPass` owns lighting and distant scenery. The oversized sphere hill placeholders are removed in version 21. Distant ground and settlement objects reuse the farm materials and have no colliders and do not extend the combat/navmesh bounds. Two unshadowed interior lights, one 128px reflection probe refreshed on scene load, four sun cascades and a single suppression pass establish a bounded starting budget. Nothing here is a measured performance guarantee.
 - Suppression remains camera-local gameplay state. Its renderer feature runs only on game cameras with active pressure, after post-processing. GUI hit indicators and HUD stay sharp. The old Built-in `OnRenderImage` effect is removed.
 
 ## Replacing weapon art
@@ -30,3 +30,7 @@ Keep imported characters' renderers/rigs separate from Vitality, CombatTarget, A
 ## Next art milestone
 
 Finish one farmhouse courtyard before extending the map: authored house/props and vegetation, a finished rifle with hands/reload, one rigged marine and one Covenant enemy. Review these in motion and during a full wave. Baked indirect lighting, light probes, authored normal maps, final VFX and measured LOD/performance tiers follow once assets and geometry stabilize.
+
+## Suppression rendering correction (version 21)
+
+The blur shader includes URP Core before the shared Blit header, uses an explicit procedural triangle and receives its source texel size per camera. Unsupported shaders skip the effect rather than replacing camera output. The validation menu also reports failed material shaders by asset path. Rebuild to remove the previous oversized horizon spheres; verify sustained-fire blur in Play mode after shader import completes.

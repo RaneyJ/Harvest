@@ -15,7 +15,7 @@ namespace Harvest
         {
             CoreUtils.Destroy(material);
             material = null; pass = null;
-            if (BlurShader == null) return;
+            if (BlurShader == null || !BlurShader.isSupported) return;
             material = CoreUtils.CreateEngineMaterial(BlurShader);
             pass = new BlurPass(material);
         }
@@ -44,6 +44,7 @@ namespace Harvest
                 var state = camera.GetComponent<SuppressionScreenBlur>();
                 if (resources.isActiveTargetBackBuffer || state == null || !state.isActiveAndEnabled) return;
                 TextureHandle source = resources.activeColorTexture;
+                if (!source.IsValid()) return;
                 var descriptor = graph.GetTextureDesc(source);
                 descriptor.name = "Harvest suppressed view";
                 descriptor.clearBuffer = false;
@@ -52,8 +53,11 @@ namespace Harvest
                 var properties = new MaterialPropertyBlock();
                 properties.SetFloat("_Radius", state.VisiblePressure * state.MaxBlurRadius);
                 properties.SetFloat("_Blend", state.VisiblePressure * state.MaxBlend);
+                properties.SetVector("_SourceTexelSize", new Vector4(1f / Mathf.Max(1, descriptor.width),
+                    1f / Mathf.Max(1, descriptor.height), descriptor.width, descriptor.height));
                 var parameters = new RenderGraphUtils.BlitMaterialParameters(source, destination, material, 0,
-                    properties, 0, 0);
+                    properties, destinationSlice: 0, destinationMip: 0,
+                    geometry: RenderGraphUtils.FullScreenGeometryType.ProceduralTriangle);
                 graph.AddBlitPass(parameters, passName: "Harvest suppression blur");
                 resources.cameraColor = destination;
             }

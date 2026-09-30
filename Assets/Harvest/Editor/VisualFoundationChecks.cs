@@ -19,12 +19,15 @@ namespace Harvest.Editor
             foreach (string name in new[] { "Harvest/Farm Surface", "Harvest/Combat Unlit", "Hidden/Harvest/SuppressionBlur", "Universal Render Pipeline/Lit" })
             {
                 Shader shader = Shader.Find(name);
-                if (shader == null || ShaderUtil.ShaderHasError(shader)) Fail("Missing or failed shader: " + name, ref errors);
+                if (shader == null || !shader.isSupported || ShaderUtil.ShaderHasError(shader)) Fail("Missing or failed shader: " + name, ref errors);
             }
             foreach (string guid in AssetDatabase.FindAssets("t:Material", new[] { "Assets/Harvest" }))
             {
                 Material material = AssetDatabase.LoadAssetAtPath<Material>(AssetDatabase.GUIDToAssetPath(guid));
-                if (material != null && material.shader != null && (material.shader.name == "Standard" || material.shader.name == "Sprites/Default"))
+                if (material == null) continue;
+                if (material.shader == null || !material.shader.isSupported || ShaderUtil.ShaderHasError(material.shader))
+                    Fail("Failed material shader: " + AssetDatabase.GetAssetPath(material), ref errors);
+                if (material.shader != null && (material.shader.name == "Standard" || material.shader.name == "Sprites/Default"))
                     Fail("Unmigrated material: " + material.name, ref errors);
             }
             Camera camera = Camera.main;
