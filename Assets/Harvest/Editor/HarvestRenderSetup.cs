@@ -55,7 +55,13 @@ namespace Harvest.Editor
                 pipeline.shadowDistance = 85f;
                 pipeline.shadowCascadeCount = 4;
                 pipeline.mainLightShadowmapResolution = 2048;
-                pipeline.supportsSoftShadows = true;
+                // URP exposes only an internal setter; configure its serialized editor setting.
+                var settings = new SerializedObject(pipeline);
+                SerializedProperty softShadows = settings.FindProperty("m_SoftShadowsSupported");
+                if (softShadows == null)
+                    throw new System.InvalidOperationException("URP soft-shadow setting was not found. Check the installed URP version.");
+                softShadows.boolValue = true;
+                settings.ApplyModifiedPropertiesWithoutUndo();
                 AssetDatabase.CreateAsset(pipeline, pipelinePath);
             }
             PlayerSettings.colorSpace = ColorSpace.Linear;
