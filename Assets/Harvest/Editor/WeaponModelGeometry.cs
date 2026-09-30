@@ -7,8 +7,15 @@ namespace Harvest.Editor
     // A single authored-in-code model recipe serves view, actor and pickup presentation.
     public static class WeaponModelGeometry
     {
-        public static GameObject Create(WeaponDefinition definition, Transform parent = null)
+        public static GameObject Create(WeaponDefinition definition, Transform parent = null, bool firstPerson = true)
         {
+            if (firstPerson && definition.ViewModelPrefab != null)
+            {
+                GameObject authored = (GameObject)PrefabUtility.InstantiatePrefab(definition.ViewModelPrefab);
+                authored.transform.SetParent(parent, false);
+                foreach (Collider collider in authored.GetComponentsInChildren<Collider>(true)) collider.enabled = false;
+                return authored;
+            }
             GameObject root = new GameObject("Detailed " + definition.DisplayName);
             root.transform.SetParent(parent, false);
             Material metal = MaterialFor("Weapon Steel", new Color(0.15f, 0.18f, 0.17f), 0.6f);
@@ -65,8 +72,10 @@ namespace Harvest.Editor
         }
         public static void AssignWorldPrefab(WeaponDefinition definition)
         {
-            GameObject model = Create(definition);
             string path = "Assets/Harvest/Prefabs/" + definition.DisplayName + " Model.prefab";
+            // Keep artist-owned world prefabs. Only the generated fallback path is regenerated.
+            if (definition.WorldModel != null && AssetDatabase.GetAssetPath(definition.WorldModel) != path) return;
+            GameObject model = Create(definition, firstPerson: false);
             definition.WorldModel = PrefabUtility.SaveAsPrefabAsset(model, path);
             Object.DestroyImmediate(model); EditorUtility.SetDirty(definition);
         }
@@ -90,8 +99,8 @@ namespace Harvest.Editor
             string path = "Assets/Harvest/Materials/" + name + ".mat";
             Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material != null) return material;
-            material = new Material(Shader.Find("Standard")); material.color = color;
-            material.SetFloat("_Metallic", metallic); material.SetFloat("_Glossiness", 0.32f);
+            material = new Material(Shader.Find("Universal Render Pipeline/Lit")); material.color = color;
+            material.SetFloat("_Metallic", metallic); material.SetFloat("_Smoothness", 0.32f);
             if (emission) { material.EnableKeyword("_EMISSION"); material.SetColor("_EmissionColor", color * 0.7f); }
             AssetDatabase.CreateAsset(material, path); return material;
         }

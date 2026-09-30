@@ -28,7 +28,7 @@ namespace Harvest
             {
                 Color faded = color;
                 faded.a = (1f - t) * 0.35f;
-                block.SetColor("_Color", faded);
+                block.SetColor("_BaseColor", faded);
                 block.SetColor("_EmissionColor", color * (1f - t) * 2f);
                 Shell.SetPropertyBlock(block);
             }

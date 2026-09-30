@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "19";
+        const string SceneVersion = "20";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the approved weapon and wind audio. Rebuild the graybox scene to play the new version. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
+                    "This scene predates the URP visual foundation. Rebuild The Line to migrate materials and apply the farmhouse visual pass. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -44,6 +44,7 @@ namespace Harvest.Editor
             Directory.CreateDirectory("Assets/Harvest/Materials");
             Directory.CreateDirectory("Assets/Harvest/Prefabs");
             Directory.CreateDirectory("Assets/Harvest/Data");
+            HarvestRenderSetup.Ensure();
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             Material soil = MakeMaterial("Soil", new Color(0.29f, 0.24f, 0.17f));
@@ -207,19 +208,7 @@ namespace Harvest.Editor
             hud.Loadout = loadout;
             hud.Encounter = encounter;
 
-            GameObject sun = new GameObject("Dusk sun");
-            Light light = sun.AddComponent<Light>();
-            light.type = LightType.Directional;
-            light.color = new Color(1f, 0.69f, 0.43f);
-            light.intensity = 1.35f;
-            sun.transform.rotation = Quaternion.Euler(22, -55, 0);
-            RenderSettings.ambientLight = new Color(0.42f, 0.34f, 0.32f);
-            RenderSettings.fog = true;
-            RenderSettings.fogColor = new Color(0.47f, 0.37f, 0.31f);
-            RenderSettings.fogMode = FogMode.ExponentialSquared;
-            RenderSettings.fogDensity = 0.012f;
-            camera.backgroundColor = RenderSettings.fogColor;
-            camera.clearFlags = CameraClearFlags.SolidColor;
+            FarmVisualPass.Build(camera);
 
             EditorSceneManager.SaveScene(scene, ScenePath);
             File.WriteAllText(SceneVersionPath, SceneVersion);
@@ -453,7 +442,7 @@ namespace Harvest.Editor
             if (existing != null) Object.DestroyImmediate(existing.gameObject);
             GameObject model = definition.WorldModel != null ?
                 (GameObject)PrefabUtility.InstantiatePrefab(definition.WorldModel, root.transform) :
-                WeaponModelGeometry.Create(definition, root.transform);
+                WeaponModelGeometry.Create(definition, root.transform, false);
             model.name = "Held weapon";
             model.transform.localPosition = isBrute ? new Vector3(0.85f, 0.25f, 0.55f) : new Vector3(0.45f, 0f, 0.5f);
             model.transform.localScale = Vector3.one * (isBrute ? 1.1f : 1f);
@@ -628,14 +617,14 @@ namespace Harvest.Editor
             Material material = AssetDatabase.LoadAssetAtPath<Material>(materialPath);
             if (material == null)
             {
-                material = new Material(Shader.Find("Standard"));
+                material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
                 material.color = new Color(1f, 1f, 1f, 0.35f);
-                material.SetFloat("_Mode", 2f);
+                HarvestRenderSetup.MakeTransparent(material);
                 material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                 material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 material.SetInt("_ZWrite", 0);
                 material.SetOverrideTag("RenderType", "Transparent");
-                material.EnableKeyword("_ALPHABLEND_ON");
+
                 material.EnableKeyword("_EMISSION");
                 material.renderQueue = 3000;
                 AssetDatabase.CreateAsset(material, materialPath);
@@ -838,7 +827,7 @@ namespace Harvest.Editor
             const string path = "Assets/Harvest/Materials/Hitscan Tracer.mat";
             Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (existing != null) return existing;
-            Material material = new Material(Shader.Find("Sprites/Default"));
+            Material material = new Material(Shader.Find("Harvest/Combat Unlit"));
             AssetDatabase.CreateAsset(material, path);
             return material;
         }
@@ -848,7 +837,7 @@ namespace Harvest.Editor
             string path = $"Assets/Harvest/Materials/{name}.mat";
             Material existing = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (existing != null) return existing;
-            Shader shader = Shader.Find("Standard");
+            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             Material material = new Material(shader) { name = name, color = color };
             if (glowing)
             {

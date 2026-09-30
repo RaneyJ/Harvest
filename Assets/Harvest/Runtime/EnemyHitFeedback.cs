@@ -41,7 +41,7 @@ namespace Harvest
             if (body == null) return;
             if (Time.time < flashUntil)
             {
-                block.SetColor("_Color", flashColor);
+                block.SetColor("_BaseColor", flashColor);
                 body.SetPropertyBlock(block);
                 flashing = true;
             }

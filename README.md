@@ -149,3 +149,10 @@ Scene version 19 adds a field-edge equipment shed with stacked bales, grain silo
 WeaponModelGeometry builds distinct service-rifle, pump-shotgun, hunting-rifle and plasma housings with barrels, stocks, grips, magazines, sights and vents. One recipe generates first-person models, NPC held models and world-model prefabs referenced by WeaponDefinition. Existing actor prefabs migrate old held cubes once. Drops display the equipped gun rather than a generic cube; fallback visuals remain available for definitions without a model. Hunting-rifle bolt name and iron-sight coordinates retain their animation/ADS contract. Weapon geometry has no colliders or gameplay effects. These remain procedural prototype models, not final authored art.
 
 Covenant outgoing damage rises 15% in shared faction damage resolution (pistol 20→23, rifle 12→13.8, Brute melee 42→48.3). Weapon assets, player/allied damage, NPC drop ammo and friendly-fire rules retain their values; a captured gun does not inherit extra Covenant damage. Combat regression checks now exercise the actual faction/armor path for the modifier, no double application, base Marine damage, and friendly-fire protection. Rebuild **Harvest > Build The Line Prototype**. Source/model layout, clearance, metadata and remote blob integrity checked; Unity compilation, navigation, visuals/ADS and Play-mode regression commands remain untested here.
+
+
+## Visual foundation (scene version 20)
+
+Pull, let Unity resolve URP 17.3, then run **Harvest > Build The Line Prototype**. The builder migrates materials and activates URP/linear lighting, with a sky, soft sun shadows, farmhouse lighting, restrained post-processing, world-mapped weathered surfaces and distant landscape. Suppression and combat tint/tracer effects have been adapted to URP.
+
+Run **Harvest > Validate Visual Foundation**, then check the encounter in Play mode. Unity compilation, shader rendering and performance were not testable in the development environment. [Visual authoring and validation workflow](VISUAL_WORKFLOW.md) documents persistent tuning assets, weapon-art overrides and the remaining art/animation work.

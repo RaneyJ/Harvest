@@ -88,7 +88,7 @@ namespace Harvest
         {
             if (body == null) return;
             if (color == Color.white) { body.SetPropertyBlock(null); return; }
-            tint.SetColor("_Color", color);
+            tint.SetColor("_BaseColor", color);
             body.SetPropertyBlock(tint);
         }
 

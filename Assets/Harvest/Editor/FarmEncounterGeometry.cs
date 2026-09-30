@@ -97,7 +97,7 @@ namespace Harvest.Editor
             string path = "Assets/Harvest/Materials/" + name + ".mat";
             Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
             if (material != null) return material;
-            material = new Material(Shader.Find("Standard"));
+            material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
             material.color = color;
             AssetDatabase.CreateAsset(material, path);
             return material;
