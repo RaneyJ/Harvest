@@ -34,6 +34,11 @@ namespace Harvest
             }
         }
         public int MarinesLeft => names.Length - marineIndex;
+        public int WaveNumber => Mathf.Min(waveIndex + 1, Definition != null && Definition.Waves != null ? Definition.Waves.Length : 0);
+        public int WaveCount => Definition != null && Definition.Waves != null ? Definition.Waves.Length : 0;
+        public bool IsBetweenWaves => transitioning;
+        public float NextWaveIn => transitioning ? Mathf.Max(0f, nextWaveAt - Time.time) : 0f;
+        float nextWaveAt;
         public bool IsEvacuating => evacuating;
         public bool IsFinished { get; private set; }
 
@@ -70,19 +75,27 @@ namespace Harvest
         IEnumerator BeginWave(int index)
         {
             transitioning = true;
+            waveIndex = index;
             EncounterWave wave = Definition.Waves[index];
-            yield return new WaitForSeconds(wave.DelaySeconds);
+            float delay = wave != null ? Mathf.Max(0f, wave.DelaySeconds) : 0f;
+            nextWaveAt = Time.time + delay;
+            SetStatus(index == 0 ? "DEFEND THE CHECKPOINT" : "WAVE CLEARED — REGROUP AND RESUPPLY");
+            yield return new WaitForSeconds(delay);
             if (IsFinished) yield break;
             waveIndex = index;
-            foreach (EnemySpawn entry in wave.Enemies)
+            foreach (EnemySpawn entry in wave != null && wave.Enemies != null ? wave.Enemies : Array.Empty<EnemySpawn>())
             {
                 if (entry == null || entry.Prefab == null) continue;
                 CovenantEnemy enemy = Instantiate(entry.Prefab, entry.Position, Quaternion.identity);
                 alive.Add(enemy);
             }
             transitioning = false;
-            SetStatus(wave.Callout);
-            if (alive.Count == 0) Debug.LogWarning("Wave has no configured enemies; the encounter cannot advance.", this);
+            SetStatus(wave != null ? wave.Callout : "HOLD THE ROAD");
+            if (alive.Count == 0)
+            {
+                Debug.LogWarning("Skipping an empty encounter wave.", this);
+                AdvanceWave();
+            }
         }
 
         public void EnemyKilled(CovenantEnemy enemy)
@@ -92,6 +105,12 @@ namespace Harvest
                 if (survivor != null) survivor.GetComponent<GruntBehavior>()?.WitnessAllyDeath(enemy);
             StateChanged?.Invoke();
             if (alive.Count != 0 || transitioning || IsFinished) return;
+            AdvanceWave();
+        }
+
+        void AdvanceWave()
+        {
+            if (IsFinished || transitioning) return;
             if (waveIndex + 1 < Definition.Waves.Length)
                 StartCoroutine(BeginWave(waveIndex + 1));
             else
@@ -114,7 +133,7 @@ namespace Harvest
             if (marineIndex >= names.Length)
             {
                 IsFinished = true;
-                SetStatus("THE ROAD HAS FALLEN — PRESS PLAY TO RETRY");
+                SetStatus("THE ROAD HAS FALLEN");
                 yield break;
             }
             Marine.TransferTo(names[marineIndex], MarineSpawn);
@@ -123,7 +142,7 @@ namespace Harvest
 
         void Update()
         {
-            if (!evacuating || IsFinished || !Marine.Vitality.IsAlive) return;
+            if (!evacuating || IsFinished || Marine == null || EvacuationPad == null || !Marine.Vitality.IsAlive) return;
             if (Vector3.Distance(Marine.transform.position, EvacuationPad.position) < 3.5f)
             {
                 IsFinished = true;

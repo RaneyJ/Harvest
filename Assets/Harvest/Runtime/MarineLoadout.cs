@@ -29,6 +29,8 @@ namespace Harvest
         public bool IsCharging => chargingWeapon != null;
         public float ChargeFraction => !IsCharging ? 0f : Mathf.Clamp01(
             (Time.time - chargeStarted) / Mathf.Max(0.01f, chargingWeapon.Definition.ChargeSeconds));
+        public DroppedWeapon PickupCandidate { get; private set; }
+        float nextPickupScan;
         public string AmmoText => Equipped == null ? "--" : Equipped.AmmoText;
 
         void Awake()
@@ -41,10 +43,7 @@ namespace Harvest
             ResetLoadout();
         }
 
-        void Start()
-        {
-            if (vitality != null) vitality.Died += DropEquippedOnDeath;
-        }
+        void OnEnable() { if (vitality != null) vitality.Died += DropEquippedOnDeath; }
 
         void OnDisable()
         {
@@ -57,8 +56,7 @@ namespace Harvest
             CancelCharge();
             if (Equipped == null || DropPrefab == null) return;
             Vector3 position = transform.position;
-            position.y = 0.55f;
-            DroppedWeapon.Spawn(DropPrefab, Equipped, position);
+            DroppedWeapon.Spawn(DropPrefab, Equipped, position, transform);
             Equipped.ReloadStarted -= OnReloadStarted;
             slots[selected] = null;
             Changed?.Invoke();
@@ -85,8 +83,14 @@ namespace Harvest
         {
             if (vitality == null || !vitality.IsAlive || (encounter != null && encounter.IsFinished))
             {
-                CancelCharge();
+                CancelCharge(); PickupCandidate = null;
                 return;
+            }
+            if (Cursor.lockState != CursorLockMode.Locked) { CancelCharge(); PickupCandidate = null; return; }
+            if (Time.time >= nextPickupScan)
+            {
+                nextPickupScan = Time.time + 0.1f;
+                PickupCandidate = FindPickup();
             }
             if (Input.GetKeyDown(KeyCode.Alpha1)) Select(0);
             if (Input.GetKeyDown(KeyCode.Alpha2)) Select(1);
@@ -165,17 +169,37 @@ namespace Harvest
         void TryPickup()
         {
             if (slots == null || DropPrefab == null) return;
+            DroppedWeapon closest = FindPickup(); // E uses the same range/visibility rules as the prompt.
+            if (closest == null) return;
+            Exchange(closest);
+        }
+
+        DroppedWeapon FindPickup()
+        {
+            if (View == null) return null;
             Collider[] nearby = Physics.OverlapSphere(transform.position, 2.5f, ~0, QueryTriggerInteraction.Collide);
             DroppedWeapon closest = null;
             float best = float.MaxValue;
             foreach (Collider collider in nearby)
             {
                 DroppedWeapon candidate = collider.GetComponentInParent<DroppedWeapon>();
-                if (candidate == null || !candidate.IsAvailable) continue;
+                if (candidate == null || !candidate.IsAvailable || !CanReachPickup(transform, View.transform.position, candidate)) continue;
                 float distance = (candidate.transform.position - transform.position).sqrMagnitude;
                 if (distance < best) { best = distance; closest = candidate; }
             }
-            if (closest == null) return;
+            return closest;
+        }
+
+        public static bool CanReachPickup(Transform actor, Vector3 eye, DroppedWeapon candidate)
+        {
+            Vector3 delta = candidate.transform.position - eye;
+            foreach (RaycastHit hit in Physics.RaycastAll(eye, delta.normalized, delta.magnitude, ~0, QueryTriggerInteraction.Ignore))
+                if (!hit.collider.transform.IsChildOf(actor) && !hit.collider.transform.IsChildOf(candidate.transform)) return false;
+            return true;
+        }
+
+        void Exchange(DroppedWeapon closest)
+        {
             WeaponInstance taken = closest.Take();
             if (taken == null) return;
             CancelCharge();
@@ -184,11 +208,11 @@ namespace Harvest
             if (replaced != null) replaced.ReloadStarted -= OnReloadStarted;
             taken.ReloadStarted += OnReloadStarted;
             slots[selected] = taken;
+            PickupCandidate = null; nextPickupScan = Time.time + 0.1f;
             if (replaced != null)
             {
                 Vector3 dropPosition = transform.position + transform.forward * 1.35f;
-                dropPosition.y = 0.55f;
-                DroppedWeapon.Spawn(DropPrefab, replaced, dropPosition);
+                DroppedWeapon.Spawn(DropPrefab, replaced, dropPosition, transform);
             }
             Changed?.Invoke();
         }

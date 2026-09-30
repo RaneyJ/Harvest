@@ -109,7 +109,7 @@ namespace Harvest
                 GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.whiteTexture);
             }
             GUI.color = Color.white;
-            GUI.Box(new Rect(16, 16, 390, 106), $"{status}\n{callSign}   |   MARINES LEFT: {marinesLeft}\nHOSTILES: {hostiles}   |   SQUAD: {Encounter.AlliesAlive}");
+            GUI.Box(new Rect(16, 16, 390, 106), $"{status}\n{callSign}   |   MARINES LEFT: {marinesLeft}\nWAVE {Encounter.WaveNumber}/{Encounter.WaveCount}   |   HOSTILES: {hostiles}   |   SQUAD: {Encounter.AlliesAlive}");
             GUI.Box(new Rect(16, Screen.height - 116, 245, 94), $"ARMOR  {armor} / {Mathf.CeilToInt(Armor.MaxArmor)}\nHEALTH  {health}\n{weapon.ToUpperInvariant()}  {ammo}");
             if (Loadout.Equipped != null && Loadout.Current != null)
             {
@@ -166,6 +166,22 @@ namespace Harvest
                 }
             }
             GUI.color = Color.white;
+            if (!finished && Marine.Vitality.IsAlive && Cursor.lockState == CursorLockMode.Locked && Loadout.PickupCandidate != null)
+            {
+                WeaponInstance pickup = Loadout.PickupCandidate.Weapon;
+                if (pickup != null)
+                    GUI.Box(new Rect(Screen.width * 0.5f - 150f, Screen.height * 0.5f + 90f, 300f, 48f),
+                        $"[E] SWAP FOR {pickup.Definition.DisplayName}\n{pickup.AmmoText}");
+            }
+            if (Encounter.IsBetweenWaves && !finished && Marine.Vitality.IsAlive)
+                GUI.Box(new Rect(Screen.width * 0.5f - 140f, 132f, 280f, 38f),
+                    $"NEXT CONTACT IN {Mathf.CeilToInt(Encounter.NextWaveIn)}s");
+            if (!finished && Marine.Vitality.IsAlive && Cursor.lockState != CursorLockMode.Locked)
+                GUI.Box(new Rect(Screen.width * 0.5f - 160f, Screen.height * 0.5f - 60f, 320f, 70f),
+                    "CURSOR RELEASED — CLICK TO RETURN\nCombat continues.\n[R] RELOAD   [1/2] WEAPONS   [E] SWAP");
+            if (finished)
+                GUI.Box(new Rect(Screen.width * 0.5f - 200f, Screen.height * 0.5f - 48f, 400f, 96f),
+                    $"{status}\nSQUAD SURVIVORS: {Encounter.AlliesAlive}\nStop and restart Play mode to replay this prototype.");
             if (suppression != null && suppression.EffectStrength > 0.01f && Marine.Vitality.IsAlive)
                 GUI.Box(new Rect(Screen.width - 200f, Screen.height - 64f, 184f, 42f),
                     $"SUPPRESSED {Mathf.CeilToInt(suppression.EffectStrength * 100f)}%");

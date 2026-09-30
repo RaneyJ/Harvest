@@ -88,13 +88,14 @@ namespace Harvest
             Vector3 desiredEye = standingViewPosition - Vector3.up * (standingHeight - controller.height);
             View.transform.localPosition = Vector3.Lerp(View.transform.localPosition, desiredEye,
                 1f - Mathf.Exp(-CrouchCameraSpeed * Time.deltaTime));
-            Vector3 input = new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical"));
+            Vector3 input = Cursor.lockState == CursorLockMode.Locked ?
+                new Vector3(Input.GetAxisRaw("Horizontal"), 0f, Input.GetAxisRaw("Vertical")) : Vector3.zero;
             Vector3 move = transform.TransformDirection(Vector3.ClampMagnitude(input, 1f));
             float speed = IsCrouched ? CrouchSpeed : Input.GetKey(KeyCode.LeftShift) ? SprintSpeed : WalkSpeed;
             if (controller.isGrounded)
             {
                 verticalVelocity = -2f;
-                if (!IsCrouched && Input.GetKeyDown(KeyCode.Space)) verticalVelocity = 6f;
+                if (Cursor.lockState == CursorLockMode.Locked && !IsCrouched && Input.GetKeyDown(KeyCode.Space)) verticalVelocity = 6f;
             }
             else verticalVelocity += Physics.gravity.y * Time.deltaTime;
             controller.Move((move * speed + Vector3.up * verticalVelocity) * Time.deltaTime);

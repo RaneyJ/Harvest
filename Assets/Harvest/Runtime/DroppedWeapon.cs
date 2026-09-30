@@ -10,9 +10,9 @@ namespace Harvest
         float availableAt;
         public bool IsAvailable => Weapon != null && Time.time >= availableAt;
 
-        public static DroppedWeapon Spawn(DroppedWeapon prefab, WeaponInstance instance, Vector3 position)
+        public static DroppedWeapon Spawn(DroppedWeapon prefab, WeaponInstance instance, Vector3 position, Transform owner = null)
         {
-            DroppedWeapon dropped = Instantiate(prefab, position, Quaternion.identity);
+            DroppedWeapon dropped = Instantiate(prefab, SurfacePosition(position, owner), Quaternion.identity);
             dropped.Initialize(instance);
             return dropped;
         }
@@ -35,15 +35,30 @@ namespace Harvest
             return taken;
         }
 
-        void OnGUI()
+        public static Vector3 SurfacePosition(Vector3 desired, Transform owner = null)
         {
-            if (!IsAvailable || Camera.main == null) return;
-            MarineController marine = FindFirstObjectByType<MarineController>();
-            if (marine == null || Vector3.Distance(transform.position, marine.transform.position) > 3f) return;
-            Vector3 point = Camera.main.WorldToScreenPoint(transform.position + Vector3.up * 0.7f);
-            if (point.z > 0f)
-                GUI.Box(new Rect(point.x - 82f, Screen.height - point.y, 164f, 38f),
-                    $"[E] {Weapon.Definition.DisplayName}\n{Weapon.AmmoText}");
+            if (owner != null)
+            {
+                Vector3 delta = desired - owner.position;
+                RaycastHit[] lane = Physics.RaycastAll(owner.position, delta.normalized, delta.magnitude,
+                    ~0, QueryTriggerInteraction.Ignore);
+                System.Array.Sort(lane, (a, b) => a.distance.CompareTo(b.distance));
+                foreach (RaycastHit hit in lane)
+                {
+                    if (hit.collider.transform.IsChildOf(owner)) continue;
+                    desired = hit.point - delta.normalized * 0.35f; break;
+                }
+            }
+            RaycastHit[] hits = Physics.RaycastAll(desired + Vector3.up * 0.6f, Vector3.down, 4f,
+                ~0, QueryTriggerInteraction.Ignore);
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+            foreach (RaycastHit hit in hits)
+            {
+                if ((owner != null && hit.collider.transform.IsChildOf(owner)) ||
+                    hit.collider.GetComponentInParent<CombatTarget>() != null || hit.normal.y < 0.5f) continue;
+                return hit.point + Vector3.up * 0.25f;
+            }
+            return desired;
         }
     }
 }

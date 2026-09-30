@@ -129,3 +129,15 @@ Scene version 17 adds alternating owner-supplied #2/#3 plasma environment impact
 Footsteps fall from 0.30 to 0.18 volume (40% lower), retaining crouch/sprint scaling. Existing allied-marine prefabs receive the 0.6 multiplier once through AudioMixRevision; further rebuilds preserve tuning. Approved Nova shotgun audio gains a stronger first 80ms (+2.3dB), tapering to a quieter tail (-4.4dB by 300ms and -8dB by 750ms). Fire cadence and weapon damage are unchanged. Rebuild **Harvest > Build The Line Prototype**. Source routing, migration, audio decoding/headroom, GUID uniqueness and remote blob integrity checked; Unity compilation and in-game mixing remain untested here.
 
 The service rifle now uses the owner's AK47 recording with only the final individual discharge and a shortened natural tail (0.804–1.454s extracted; 0.65-second clip). This avoids carrying another recorded round into playback. The existing asset GUID and shared consumed-shot event path are retained: player, allies and any other actor using the service rifle play one discharge per accepted round, at the weapon's cadence, with no burst loop. Source identity and unspecified licensing are recorded in credits.
+
+### Vertical slice cleanup
+
+Scene version 18 raises shotgun output by approximately 70% overall (+4.6dB): source volume migrates once from 0.65 to 1.0 and the clip gains 1.105, preserving its stronger blast and quieter tail. Later source-volume tuning survives rebuilds through WeaponDefinition.AudioMixRevision. Other weapon and impact levels are unchanged.
+
+One HUD pickup prompt now identifies the nearest reachable weapon that E will actually exchange. Pickup scans run at 10Hz, with an immediate rescan on E; world geometry blocks both prompts and pickups. Per-drop OnGUI searches and overlapping labels are removed. Weapon drops raycast onto nearby walkable surfaces at their actual height, including farmhouse upper floors, and swap placement stops short of intervening geometry. Player/NPC drops retain their ammunition rules. Re-enabled player loadouts restore their death subscription.
+
+Wave number and an inter-wave countdown communicate time to regroup and resupply. Empty or null waves/entry lists advance safely instead of stalling; no enemy count or difficulty changes. Cursor release now blocks player movement, reload/swap and combat input while the HUD explains that the encounter remains live. Evacuation guards missing references, and the ending shows remaining squad survivors and explicit prototype replay instructions.
+
+Rebuild via **Harvest > Build The Line Prototype**. Audio gain/headroom, event/source structure, GUID uniqueness, pickup/drop regression source and exact remote blob integrity checked. Unity compile, Play-mode checks, upper-floor drops, pickup occlusion and HUD appearance still require Editor validation.
+
+**Harvest > Run Slice Interaction Checks (Play Mode)** creates isolated temporary test geometry to exercise upper-floor drop placement, visible pickups, wall/floor pickup occlusion and wall-safe swap placement. This command is supplied for Editor verification and has not run here.

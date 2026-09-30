@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "17";
+        const string SceneVersion = "18";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -90,6 +90,11 @@ namespace Harvest.Editor
             EditorUtility.SetDirty(shotgunData);
             WeaponDefinition huntingRifle = MakeHuntingRifle(rust);
             AssignApprovedAudio(shotgunData, "ShotgunNova", null);
+            if (shotgunData.AudioMixRevision < 1)
+            {
+                shotgunData.FireVolume = 1f; shotgunData.AudioMixRevision = 1;
+                EditorUtility.SetDirty(shotgunData);
+            }
             AssignApprovedAudio(rifleData, "ServiceRifle", "RifleReload");
             AssignApprovedAudio(huntingRifle, "HuntingRifleMosin", null);
             PlasmaBolt bolt = MakeBoltPrefab(plasma);

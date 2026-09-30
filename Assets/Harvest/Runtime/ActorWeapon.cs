@@ -39,7 +39,7 @@ namespace Harvest
             Equipped.ReloadStarted -= OnReloadStarted;
             Equipped.PrepareNpcDrop();
             DroppedWeapon.Spawn(DropPrefab, Equipped,
-                new Vector3(transform.position.x, 0.55f, transform.position.z));
+                transform.position, transform);
             Equipped = null;
         }
     }

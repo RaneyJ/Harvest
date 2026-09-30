@@ -47,3 +47,5 @@ Sharp_plasma_impact__#3-1790723008249.mp3: trim starts 0.523s; SHA-256 b7cf3e378
 ShotgunNova retains the approved recording and pitch; gain rises to 1.3 for the first 80ms, tapers to 0.6 by 300ms and 0.4 by 750ms. This raises the initial blast and lowers its tail.
 
 ServiceRifle.ogg now uses AK47_firing,_deep_#3-1790723181126.mp3, supplied and approved by the owner on 2026-09-29. Author, origin and license were not supplied; not asserted CC0. Source SHA-256: e4fced865375a8334f28c8c4a05dea6feceafda50b619ff850fc0d0de1d70791. The final discharge is isolated at 0.804–1.454s to preserve its decay without another burst round; mono downmix, boundary fades, peak gain 0.6, OGG conversion. Earlier burst rounds and leading silence are excluded. This replaces the previous AR-15 audition clip while preserving its Unity GUID.
+
+Shotgun mix revision: source playback volume increases from 0.65 to 1.0, and the prepared clip gains 1.105 overall. Combined default linear gain is 1.7 (about +4.6dB), preserving the prior blast-to-tail envelope without exceeding the source-volume range.
