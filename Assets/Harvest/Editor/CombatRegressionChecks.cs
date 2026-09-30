@@ -134,6 +134,17 @@ namespace Harvest.Editor
                 Expect(PlayerDamageFeedback.RedStrength(0f, 0f, 0.12f, 0.65f), 0.65f, "Critical health tint");
                 Expect(PlayerDamageFeedback.RedStrength(1f, 0f, 0.12f, 0.65f), 0f, "Restored armor clears red tint");
 
+                identity.Team = CombatTeam.Marine;
+                armor.ResetArmor();
+                float protectedArmor = armor.Armor;
+                CombatDamage.Apply(identity, CombatTeam.Covenant, 20f, center + Vector3.right);
+                Expect(armor.Armor, protectedArmor - 23f, "Covenant attacks gain 15 percent damage once");
+                CombatDamage.Apply(identity, CombatTeam.Marine, 20f, center + Vector3.right);
+                Expect(armor.Armor, protectedArmor - 23f, "Friendly fire stays disabled");
+                identity.Team = CombatTeam.Covenant;
+                CombatDamage.Apply(identity, CombatTeam.Marine, 20f, center + Vector3.right);
+                Expect(armor.Armor, protectedArmor - 43f, "Marine attacks retain base weapon damage");
+
                 Debug.Log("Combat regression checks passed: faction/range filters, per-projectile and per-pellet limits, cover impacts, cooldown/ammo rejection, silent buildup, threshold ramp, pressure cap/reset.");
             }
             catch (Exception error) { Debug.LogException(error); }

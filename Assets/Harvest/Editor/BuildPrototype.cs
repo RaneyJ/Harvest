@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "18";
+        const string SceneVersion = "19";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -61,6 +61,7 @@ namespace Harvest.Editor
             Material beacon = MakeMaterial("Evac Beacon", new Color(0.17f, 0.9f, 0.35f), true);
 
             FarmEncounterGeometry.Build(soil, road, grain, concrete, rust);
+            FarmDetailGeometry.Build();
             // Waist-high cover with open lanes. Everything is ordinary farm or freight infrastructure.
             Block("Checkpoint barricade left", concrete, new Vector3(-5, 0.7f, -7), new Vector3(4.5f, 1.4f, 1.3f));
             Block("Checkpoint barricade right", concrete, new Vector3(5, 0.7f, -7), new Vector3(4.5f, 1.4f, 1.3f));
@@ -106,6 +107,8 @@ namespace Harvest.Editor
             ConfigureFeedback(huntingRifle, 4f, 0.25f, 0.1f, 8f);
             ConfigureFeedback(plasmaPistol, 0.5f, 0.15f, 0.03f, 2f);
             ConfigureFeedback(plasmaRifle, 0.45f, 0.2f, 0.025f, 1.5f);
+            foreach (WeaponDefinition definition in new[] { rifleData, shotgunData, huntingRifle, plasmaPistol, plasmaRifle })
+                WeaponModelGeometry.AssignWorldPrefab(definition);
             GrenadeExplosionVisual explosion = MakeGrenadeExplosionPrefab();
             GrenadeDefinition fragData = MakeGrenade("Frag", GrenadeKind.Frag, human, explosion);
             if (fragData.ExplosionSound == null) fragData.ExplosionSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Harvest/Audio/Approved/FragDeepBlast.ogg");
@@ -168,19 +171,16 @@ namespace Harvest.Editor
             PlayerDamageFeedback feedback = view.AddComponent<PlayerDamageFeedback>();
             feedback.Armor = marineArmor;
             feedback.View = camera;
-            GameObject rifle = Block("Service rifle silhouette", human, new Vector3(0, 0, 0), new Vector3(0.13f, 0.14f, 0.65f));
-            rifle.transform.SetParent(view.transform, false);
+            GameObject rifle = WeaponModelGeometry.Create(rifleData, view.transform);
             rifle.transform.localPosition = new Vector3(0.36f, -0.33f, 0.7f);
-            Object.DestroyImmediate(rifle.GetComponent<Collider>());
-            GameObject shotgun = Block("Combat shotgun silhouette", rust, new Vector3(0, 0, 0), new Vector3(0.18f, 0.19f, 0.48f));
-            shotgun.transform.SetParent(view.transform, false);
+            GameObject shotgun = WeaponModelGeometry.Create(shotgunData, view.transform);
             shotgun.transform.localPosition = new Vector3(0.36f, -0.35f, 0.62f);
-            Object.DestroyImmediate(shotgun.GetComponent<Collider>());
-            GameObject pistolModel = MakeViewModel("Plasma pistol silhouette", plasma, view.transform,
-                new Vector3(0.33f, -0.32f, 0.6f), new Vector3(0.22f, 0.19f, 0.35f));
-            GameObject rifleModel = MakeViewModel("Plasma rifle silhouette", plasmaRifleColor, view.transform,
-                new Vector3(0.36f, -0.32f, 0.75f), new Vector3(0.25f, 0.2f, 0.7f));
-            GameObject hunterModel = MakeHuntingModel(view.transform, rust, concrete);
+            GameObject pistolModel = WeaponModelGeometry.Create(plasmaPistol, view.transform);
+            pistolModel.transform.localPosition = new Vector3(0.33f, -0.32f, 0.6f);
+            GameObject rifleModel = WeaponModelGeometry.Create(plasmaRifle, view.transform);
+            rifleModel.transform.localPosition = new Vector3(0.36f, -0.32f, 0.75f);
+            GameObject hunterModel = WeaponModelGeometry.Create(huntingRifle, view.transform);
+            hunterModel.transform.localPosition = new Vector3(0.32f, -0.3f, 0.65f);
             WeaponView weaponView = view.AddComponent<WeaponView>();
             weaponView.Loadout = loadout;
             weaponView.Melee = player.GetComponent<MeleeAttack>();
@@ -405,7 +405,7 @@ namespace Harvest.Editor
             if (enemyWeapon.Team != CombatTeam.Covenant) { enemyWeapon.Team = CombatTeam.Covenant; changed = true; }
             if (enemyWeapon.StartingWeapon == null) { enemyWeapon.StartingWeapon = weapon; changed = true; }
             if (enemyWeapon.DropPrefab == null) { enemyWeapon.DropPrefab = dropPrefab; changed = true; }
-            if (root.transform.Find("Held weapon") == null)
+            if (root.transform.Find("Held weapon") == null || root.transform.Find("Held weapon/Receiver") == null)
             {
                 AddHeldWeapon(root, enemyWeapon.StartingWeapon, typeof(T) == typeof(BruteBehavior));
                 changed = true;
@@ -449,13 +449,14 @@ namespace Harvest.Editor
 
         static void AddHeldWeapon(GameObject root, WeaponDefinition definition, bool isBrute)
         {
-            GameObject model = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            Transform existing = root.transform.Find("Held weapon");
+            if (existing != null) Object.DestroyImmediate(existing.gameObject);
+            GameObject model = definition.WorldModel != null ?
+                (GameObject)PrefabUtility.InstantiatePrefab(definition.WorldModel, root.transform) :
+                WeaponModelGeometry.Create(definition, root.transform);
             model.name = "Held weapon";
-            model.transform.SetParent(root.transform, false);
             model.transform.localPosition = isBrute ? new Vector3(0.85f, 0.25f, 0.55f) : new Vector3(0.45f, 0f, 0.5f);
-            model.transform.localScale = isBrute ? new Vector3(0.22f, 0.22f, 0.7f) : new Vector3(0.17f, 0.2f, 0.35f);
-            if (definition != null) model.GetComponent<Renderer>().sharedMaterial = definition.PickupMaterial;
-            Object.DestroyImmediate(model.GetComponent<Collider>());
+            model.transform.localScale = Vector3.one * (isBrute ? 1.1f : 1f);
         }
 
         static bool EnsurePrecisionRegion(GameObject root, bool isBrute, Material material)
@@ -763,6 +764,14 @@ namespace Harvest.Editor
                 if (contents.GetComponent<FootstepAudio>() == null) { ConfigureFootsteps(contents); changed = true; }
                 FootstepAudio steps = contents.GetComponent<FootstepAudio>();
                 if (steps.AudioMixRevision < 1) { steps.Volume *= 0.6f; steps.AudioMixRevision = 1; changed = true; }
+                if (contents.transform.Find("Held weapon/Receiver") == null)
+                {
+                    AddHeldWeapon(contents, rifle, false);
+                    AlliedMarine ally = contents.GetComponent<AlliedMarine>();
+                    ally.GunVisual = contents.transform.Find("Held weapon");
+                    ally.GunVisual.localPosition = new Vector3(0.38f, 1.25f, 0.45f);
+                    changed = true;
+                }
                 if (changed) PrefabUtility.SaveAsPrefabAsset(contents, path);
                 PrefabUtility.UnloadPrefabContents(contents);
                 return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<AlliedMarine>();
@@ -804,7 +813,7 @@ namespace Harvest.Editor
             AddHeldWeapon(root, rifle, false);
             marine.GunVisual = root.transform.Find("Held weapon");
             marine.GunVisual.localPosition = new Vector3(0.38f, 1.25f, 0.45f);
-            marine.GunVisual.localScale = new Vector3(0.17f, 0.2f, 0.65f);
+            marine.GunVisual.localScale = Vector3.one;
             GameObject saved = PrefabUtility.SaveAsPrefabAsset(root, path);
             Object.DestroyImmediate(root);
             return saved.GetComponent<AlliedMarine>();

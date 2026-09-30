@@ -147,6 +147,8 @@ namespace Harvest.Editor
                         float x = side * (10.5f + column * 2f), z = -44f + row * 4.5f;
                         if (side < 0 && z > -16f && z < 10f) continue; // House and its yard.
                         if (side < 0 && x > -17f && z > 30f && z < 46f) continue; // Burned freight car.
+                        if (side < 0 && x < -18f && z > 14f && z < 24f) continue; // Equipment shed.
+                        if (side > 0 && x > 20f && z > 43f && z < 53f) continue; // Grain silo.
                         if (side > 0 && x > 20f && x < 26f && z > 20f && z < 34f) continue;
                         for (int stalk = 0; stalk < 4; stalk++)
                         {

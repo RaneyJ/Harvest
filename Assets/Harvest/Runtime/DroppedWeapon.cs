@@ -8,6 +8,7 @@ namespace Harvest
         public Renderer Visual;
         public WeaponInstance Weapon { get; private set; }
         float availableAt;
+        GameObject detailedModel;
         public bool IsAvailable => Weapon != null && Time.time >= availableAt;
 
         public static DroppedWeapon Spawn(DroppedWeapon prefab, WeaponInstance instance, Vector3 position, Transform owner = null)
@@ -20,6 +21,15 @@ namespace Harvest
         public void Initialize(WeaponInstance instance)
         {
             Weapon = instance;
+            if (detailedModel != null) Destroy(detailedModel);
+            bool hasModel = instance.Definition.WorldModel != null;
+            if (Visual != null) Visual.gameObject.SetActive(!hasModel);
+            if (hasModel)
+            {
+                detailedModel = Instantiate(instance.Definition.WorldModel, transform, false);
+                detailedModel.transform.localRotation = Quaternion.Euler(0f, 25f, 90f);
+                detailedModel.transform.localScale = Vector3.one * 0.75f;
+            }
             availableAt = Time.time + 0.35f;
             if (Visual != null && instance.Definition.PickupMaterial != null)
                 Visual.sharedMaterial = instance.Definition.PickupMaterial;

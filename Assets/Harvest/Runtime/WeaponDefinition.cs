@@ -25,6 +25,7 @@ namespace Harvest
         public PlasmaBolt ProjectilePrefab;
         [Min(1f)] public float ProjectileSpeed = 17f;
         public Material PickupMaterial;
+        public GameObject WorldModel;
         [HideInInspector] public int FeedbackRevision;
         [HideInInspector] public int AudioMixRevision;
         [Header("Audio")]
