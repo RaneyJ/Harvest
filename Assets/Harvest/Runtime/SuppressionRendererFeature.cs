@@ -2,10 +2,10 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering.RenderGraphModule;
-using UnityEngine.Rendering.RenderGraphModule.Util;
 
 namespace Harvest
 {
+    // Preserve the camera framebuffer; sample a separate copy and alpha-blend a limited overlay.
     public sealed class SuppressionRendererFeature : ScriptableRendererFeature
     {
         public Shader BlurShader;
@@ -31,10 +31,20 @@ namespace Harvest
         sealed class BlurPass : ScriptableRenderPass
         {
             readonly Material material;
+            static readonly Vector4 FullTexture = new Vector4(1f, 1f, 0f, 0f);
+            sealed class CopyData { public TextureHandle Source; }
+            sealed class OverlayData
+            {
+                public TextureHandle Source;
+                public Material Material;
+                public Vector4 Settings;
+                public int ShaderPass;
+            }
             public BlurPass(Material source)
             {
                 material = source;
-                renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
+                // Work on scene color before grading/FXAA swap camera targets.
+                renderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
                 ConfigureInput(ScriptableRenderPassInput.Color);
             }
             public override void RecordRenderGraph(RenderGraph graph, ContextContainer frameData)
@@ -42,36 +52,43 @@ namespace Harvest
                 var resources = frameData.Get<UniversalResourceData>();
                 var camera = frameData.Get<UniversalCameraData>().camera;
                 var state = camera.GetComponent<SuppressionScreenBlur>();
-                if (resources.isActiveTargetBackBuffer || state == null || !state.isActiveAndEnabled) return;
-                TextureHandle source = resources.activeColorTexture;
-                if (!source.IsValid()) return;
-                var descriptor = graph.GetTextureDesc(source);
-                descriptor.name = "Harvest suppressed view";
+                if (resources.isActiveTargetBackBuffer || state == null || !state.isActiveAndEnabled ||
+                    state.VisiblePressure < 0.001f || state.MaxBlend <= 0f || state.MaxBlurRadius <= 0f) return;
+                TextureHandle sceneColor = resources.activeColorTexture;
+                if (!sceneColor.IsValid()) return;
+                var descriptor = graph.GetTextureDesc(sceneColor);
+                descriptor.name = "Harvest suppression scene copy";
                 descriptor.clearBuffer = false;
-                TextureHandle destination = graph.CreateTexture(descriptor);
-                // Snapshot per-camera values; don't mutate a shared material during graph recording.
-                var properties = new MaterialPropertyBlock();
-                properties.SetFloat("_Radius", state.VisiblePressure * state.MaxBlurRadius);
-                properties.SetFloat("_Blend", state.VisiblePressure * state.MaxBlend);
-                properties.SetVector("_SourceTexelSize", new Vector4(1f / Mathf.Max(1, descriptor.width),
-                    1f / Mathf.Max(1, descriptor.height), descriptor.width, descriptor.height));
-                // Bind the texture and optional integer properties explicitly. The released
-                // URP helper owns its scale-vector binding; it exposes no scaleBiasPropertyID.
-                var parameters = new RenderGraphUtils.BlitMaterialParameters(source, destination, material, 0);
-                parameters.propertyBlock = properties;
-                parameters.geometry = RenderGraphUtils.FullScreenGeometryType.ProceduralTriangle;
-                parameters.sourceTexturePropertyID = Shader.PropertyToID("_BlitTexture");
-                parameters.sourceSlicePropertyID = Shader.PropertyToID("_BlitTexArraySlice");
-                parameters.sourceMipPropertyID = Shader.PropertyToID("_BlitMipLevel");
-                parameters.destinationSlice = 0;
-                parameters.destinationMip = 0;
-                parameters.sourceSlice = -1;
-                parameters.sourceMip = -1;
-                parameters.numSlices = -1;
-                parameters.numMips = 1;
-                graph.AddBlitPass(parameters, passName: "Harvest suppression blur");
+                descriptor.msaaSamples = MSAASamples.None;
+                TextureHandle copy = graph.CreateTexture(descriptor);
+                using (var builder = graph.AddRasterRenderPass<CopyData>("Harvest suppression copy", out var data))
+                {
+                    data.Source = sceneColor;
+                    builder.UseTexture(sceneColor, AccessFlags.Read);
+                    builder.SetRenderAttachment(copy, 0, AccessFlags.WriteAll);
+                    builder.SetRenderFunc((CopyData draw, RasterGraphContext context) =>
+                        Blitter.BlitTexture(context.cmd, draw.Source, FullTexture, 0f, false));
+                }
+                using (var builder = graph.AddRasterRenderPass<OverlayData>("Harvest suppression overlay", out var data))
+                {
+                    data.Source = copy;
+                    data.Material = material;
+                    data.ShaderPass = state.DiagnosticCopyOnly ? 0 : 1;
+                    data.Settings = new Vector4(state.VisiblePressure * Mathf.Max(0f, state.MaxBlurRadius),
+                        state.VisiblePressure * Mathf.Clamp(state.MaxBlend, 0f, 0.45f),
+                        1f / Mathf.Max(1, descriptor.width), 1f / Mathf.Max(1, descriptor.height));
+                    builder.UseTexture(copy, AccessFlags.Read);
+                    // ReadWrite is essential: blending must load the existing scene color.
+                    builder.SetRenderAttachment(sceneColor, 0, AccessFlags.ReadWrite);
+                    builder.AllowGlobalStateModification(true);
+                    builder.SetRenderFunc((OverlayData draw, RasterGraphContext context) =>
+                    {
+                        context.cmd.SetGlobalVector(Shader.PropertyToID("_HarvestSuppressionSettings"), draw.Settings);
+                        Blitter.BlitTexture(context.cmd, draw.Source, FullTexture, draw.Material, draw.ShaderPass);
+                    });
+                }
                 state.LastScheduledRenderFrame = Time.frameCount;
-                resources.cameraColor = destination;
+                // Keep cameraColor and its identity intact. URP's later passes use the original target.
             }
         }
     }

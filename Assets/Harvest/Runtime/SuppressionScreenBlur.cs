@@ -11,10 +11,11 @@ namespace Harvest
         // Retained for existing scene serialization; URP uses a single full-resolution pass.
         [HideInInspector] public int Downsample = 2;
         [Range(0f, 12f)] public float MaxBlurRadius = 2.5f;
-        [Range(0f, 1f)] public float MaxBlend = 0.45f;
+        [Range(0f, 0.45f)] public float MaxBlend = 0.45f;
         [Min(0.1f)] public float FollowSpeed = 8f;
         public float VisiblePressure { get; private set; }
         public int LastScheduledRenderFrame { get; internal set; } = -1;
+        [HideInInspector] public bool DiagnosticCopyOnly;
         void LateUpdate()
         {
             float target = State != null ? State.EffectStrength : 0f;
