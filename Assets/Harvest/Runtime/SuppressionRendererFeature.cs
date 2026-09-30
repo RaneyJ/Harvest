@@ -55,13 +55,12 @@ namespace Harvest
                 properties.SetFloat("_Blend", state.VisiblePressure * state.MaxBlend);
                 properties.SetVector("_SourceTexelSize", new Vector4(1f / Mathf.Max(1, descriptor.width),
                     1f / Mathf.Max(1, descriptor.height), descriptor.width, descriptor.height));
-                // Use the basic constructor and bind every helper property explicitly. Never let
-                // an uninitialized ID alias the texture and scale vector in the property sheet.
+                // Bind the texture and optional integer properties explicitly. The released
+                // URP helper owns its scale-vector binding; it exposes no scaleBiasPropertyID.
                 var parameters = new RenderGraphUtils.BlitMaterialParameters(source, destination, material, 0);
                 parameters.propertyBlock = properties;
                 parameters.geometry = RenderGraphUtils.FullScreenGeometryType.ProceduralTriangle;
                 parameters.sourceTexturePropertyID = Shader.PropertyToID("_BlitTexture");
-                parameters.scaleBiasPropertyID = Shader.PropertyToID("_BlitScaleBias");
                 parameters.sourceSlicePropertyID = Shader.PropertyToID("_BlitTexArraySlice");
                 parameters.sourceMipPropertyID = Shader.PropertyToID("_BlitMipLevel");
                 parameters.destinationSlice = 0;
