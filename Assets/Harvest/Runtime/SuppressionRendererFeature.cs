@@ -55,10 +55,23 @@ namespace Harvest
                 properties.SetFloat("_Blend", state.VisiblePressure * state.MaxBlend);
                 properties.SetVector("_SourceTexelSize", new Vector4(1f / Mathf.Max(1, descriptor.width),
                     1f / Mathf.Max(1, descriptor.height), descriptor.width, descriptor.height));
-                var parameters = new RenderGraphUtils.BlitMaterialParameters(source, destination, material, 0,
-                    properties, destinationSlice: 0, destinationMip: 0,
-                    geometry: RenderGraphUtils.FullScreenGeometryType.ProceduralTriangle);
+                // Use the basic constructor and bind every helper property explicitly. Never let
+                // an uninitialized ID alias the texture and scale vector in the property sheet.
+                var parameters = new RenderGraphUtils.BlitMaterialParameters(source, destination, material, 0);
+                parameters.propertyBlock = properties;
+                parameters.geometry = RenderGraphUtils.FullScreenGeometryType.ProceduralTriangle;
+                parameters.sourceTexturePropertyID = Shader.PropertyToID("_BlitTexture");
+                parameters.scaleBiasPropertyID = Shader.PropertyToID("_BlitScaleBias");
+                parameters.sourceSlicePropertyID = Shader.PropertyToID("_BlitTexArraySlice");
+                parameters.sourceMipPropertyID = Shader.PropertyToID("_BlitMipLevel");
+                parameters.destinationSlice = 0;
+                parameters.destinationMip = 0;
+                parameters.sourceSlice = -1;
+                parameters.sourceMip = -1;
+                parameters.numSlices = -1;
+                parameters.numMips = 1;
                 graph.AddBlitPass(parameters, passName: "Harvest suppression blur");
+                state.LastScheduledRenderFrame = Time.frameCount;
                 resources.cameraColor = destination;
             }
         }

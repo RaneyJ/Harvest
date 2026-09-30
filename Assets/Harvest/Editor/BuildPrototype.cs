@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "21";
+        const string SceneVersion = "22";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -858,11 +858,38 @@ namespace Harvest.Editor
             return block;
         }
 
+        static Material MakeSmokeMaterial()
+        {
+            const string path = "Assets/Harvest/Materials/Farm Smoke.mat";
+            Shader shader = AssetDatabase.LoadAssetAtPath<Shader>("Assets/Harvest/Shaders/Smoke.shader");
+            if (shader == null || ShaderUtil.ShaderHasError(shader))
+                throw new System.InvalidOperationException("Harvest smoke shader is missing or failed to compile. Check the Console shader errors.");
+            Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (material == null)
+            {
+                material = new Material(shader) { name = "Farm Smoke" };
+                AssetDatabase.CreateAsset(material, path);
+            }
+            else if (material.shader != shader) { material.shader = shader; EditorUtility.SetDirty(material); }
+            return material;
+        }
+
         static void Smoke(Vector3 position)
         {
             GameObject objectWithSmoke = new GameObject("Smoke column");
             objectWithSmoke.transform.position = position;
             ParticleSystem particles = objectWithSmoke.AddComponent<ParticleSystem>();
+            var renderer = particles.GetComponent<ParticleSystemRenderer>();
+            renderer.sharedMaterial = MakeSmokeMaterial();
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            var fade = particles.colorOverLifetime;
+            fade.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
+                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.15f),
+                    new GradientAlphaKey(0.65f, 0.7f), new GradientAlphaKey(0f, 1f) });
+            fade.color = gradient;
             var main = particles.main;
             main.startLifetime = 8f;
             main.startSpeed = 2f;

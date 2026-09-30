@@ -5,7 +5,7 @@ The Line now targets Unity 6000.3 / URP 17.3 with Render Graph enabled and linea
 ## Pull and rebuild
 
 1. Let Unity Package Manager resolve URP after pulling `prototype/the-line`.
-2. Save manual scene changes, then run **Harvest > Build The Line Prototype**. Version 21 rebuilds the generated scene, creates persistent rendering assets and migrates Harvest Standard materials in place. Weapon tuning, audio and configured waves remain on their existing assets.
+2. Save manual scene changes, then run **Harvest > Build The Line Prototype**. Version 22 rebuilds the generated scene, creates persistent rendering assets and migrates Harvest Standard materials in place. Weapon tuning, audio and configured waves remain on their existing assets.
 3. Run **Harvest > Validate Visual Foundation**. Check the Console for shader errors.
 4. In Play mode inspect farmhouse interiors, shadows, rifle tracers, plasma, grenade fading, armor/charge tint feedback and sustained-fire suppression. Also check upstairs movement, cover and all waves. The build environment used for this change has no Unity Editor; these runtime and visual checks still need to be run in Unity.
 
@@ -34,3 +34,11 @@ Finish one farmhouse courtyard before extending the map: authored house/props an
 ## Suppression rendering correction (version 21)
 
 The blur shader includes URP Core before the shared Blit header, uses an explicit procedural triangle and receives its source texel size per camera. Unsupported shaders skip the effect rather than replacing camera output. The validation menu also reports failed material shaders by asset path. Rebuild to remove the previous oversized horizon spheres; verify sustained-fire blur in Play mode after shader import completes.
+
+## Smoke and property binding correction (version 22)
+
+The original Smoke column particle systems previously had no assigned material, leaving a Built-in default after URP migration. They now use a dedicated transparent URP smoke shader with soft radial opacity, fog, and lifetime fading. Rebuild to assign the material to all three emitters. Validation detects old default particle materials.
+
+Suppression now uses the basic blit parameter constructor and explicitly binds the source texture, scale vector, slice integer and mip integer to distinct Shader.PropertyToID names; it no longer relies on the property-block overload defaults. These changes address the reported `<noninit>` property-sheet conflict. Unity GPU validation remains necessary.
+
+Run **Harvest > Run Suppression Render Check (Play Mode)** with the Game view active. It creates a temporary offscreen camera, exercises the real feature at zero/full/reset pressure and reads a GPU-rendered pixel. It checks constant-color preservation, verifies that the pass actually scheduled, detects property-sheet conflicts and cleans up the camera. A failure is reported with the sampled colors or binding message. This command has not been executed in the development environment.

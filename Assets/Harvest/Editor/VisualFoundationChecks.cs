@@ -16,7 +16,7 @@ namespace Harvest.Editor
             if (QualitySettings.renderPipeline != null && !(QualitySettings.renderPipeline is UniversalRenderPipelineAsset))
                 Fail("Active quality level overrides URP.", ref errors);
             if (PlayerSettings.colorSpace != ColorSpace.Linear) Fail("Linear color space is required.", ref errors);
-            foreach (string name in new[] { "Harvest/Farm Surface", "Harvest/Combat Unlit", "Hidden/Harvest/SuppressionBlur", "Universal Render Pipeline/Lit" })
+            foreach (string name in new[] { "Harvest/Farm Surface", "Harvest/Combat Unlit", "Harvest/Smoke", "Hidden/Harvest/SuppressionBlur", "Universal Render Pipeline/Lit" })
             {
                 Shader shader = Shader.Find(name);
                 if (shader == null || !shader.isSupported || ShaderUtil.ShaderHasError(shader)) Fail("Missing or failed shader: " + name, ref errors);
@@ -29,6 +29,13 @@ namespace Harvest.Editor
                     Fail("Failed material shader: " + AssetDatabase.GetAssetPath(material), ref errors);
                 if (material.shader != null && (material.shader.name == "Standard" || material.shader.name == "Sprites/Default"))
                     Fail("Unmigrated material: " + material.name, ref errors);
+            }
+            foreach (var particles in Object.FindObjectsByType<ParticleSystemRenderer>(FindObjectsSortMode.None))
+            {
+                if (particles.name != "Smoke column") continue;
+                Material smoke = particles.sharedMaterial;
+                if (smoke == null || smoke.shader == null || smoke.shader.name != "Harvest/Smoke")
+                    Fail("Smoke column still uses the default particle material. Rebuild The Line.", ref errors);
             }
             Camera camera = Camera.main;
             if (camera == null || camera.GetComponent<SuppressionScreenBlur>() == null)

@@ -14,6 +14,7 @@ namespace Harvest
         [Range(0f, 1f)] public float MaxBlend = 0.45f;
         [Min(0.1f)] public float FollowSpeed = 8f;
         public float VisiblePressure { get; private set; }
+        public int LastScheduledRenderFrame { get; internal set; } = -1;
         void LateUpdate()
         {
             float target = State != null ? State.EffectStrength : 0f;
