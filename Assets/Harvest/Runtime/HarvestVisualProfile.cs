@@ -7,11 +7,15 @@ namespace Harvest
     {
         [Header("Practical lighting (rebuild after editing)")]
         public Color PracticalColor = new Color(1f, .78f, .53f);
-        [Min(0f)] public float GroundPracticalIntensity = 1.4f;
-        [Min(0f)] public float UpperPracticalIntensity = 1.2f;
+        [Min(0f)] public float GroundPracticalIntensity = 5.5f;
+        [Min(0f)] public float UpperPracticalIntensity = 4.5f;
         [Min(0f)] public float PorchPracticalIntensity = .7f;
-        [Range(1f, 12f)] public float PracticalRange = 7f;
+        [Range(1f, 12f)] public float PracticalRange = 9f;
         [HideInInspector] public int PracticalSetupRevision;
+        [HideInInspector] public int InteriorReadabilityRevision;
+        [Header("Baked window light")]
+        public Color WindowBounceColor = new Color(.66f, .78f, 1f);
+        [Range(0f, 8f)] public float WindowBounceIntensity = 1.5f;
         [Header("Daylight and atmosphere")]
         public Color SunColor = new Color(1f, 0.82f, 0.64f);
         [Min(0f)] public float SunIntensity = 1.8f;

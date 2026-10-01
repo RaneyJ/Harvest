@@ -36,7 +36,7 @@ The farmhouse keeps the original footprint, floor spacing and road-facing firing
 
 ## Build and review
 
-1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 31 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
+1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 32 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
 2. Run **Harvest > Validate Farmhouse Foundation**. It checks prefab connection and persistent mesh ownership in Edit mode. Both modes check hierarchy/collision separation, finite geometry, triangle winding, UV channels, tangents, standing-body clearance, support under circulation points and firing sightlines. Play mode does not require editor prefab/asset ownership for the live objects.
 3. Enter Play mode, run the same menu to additionally check a complete marine NavMesh path from downstairs to the upstairs window.
 4. Walk the front and rear entrances, stairs in both directions, landing and upstairs firing approaches. Check standing/crouching and grenade behavior. The capsule checks allow adjacent traversable stair risers; they do not replace a real CharacterController traversal check.
@@ -122,3 +122,10 @@ API references: [Unity 6.3 LightingSettings](https://docs.unity3d.com/6000.3/Doc
 ## Window-sill contact correction (version 31)
 
 The timber board's top previously coincided with the plaster reveal, and the older exterior ledge overlapped it. Each window now uses one board spanning the wall and both overhangs. Its underside rests on the plaster sill; its top is 50mm above the reveal. The interior apron meets the board underside and embeds its back 1.5mm into the wall rather than floating. Removed the duplicate exterior ledges. Window/wall collision is unchanged; inspect the joint inside and outside after rebuilding, then re-bake lighting/reflections. Contact/overlap arithmetic passed; Unity rendering remains to be checked.
+
+
+## Interior readability (version 32)
+
+Screenshot review showed nearly black rooms outside direct sun patches. Each storey now has two shadowed practical fixtures, with stronger initial intensity and a longer range. Only exact previous default values migrate once; deliberate lamp tuning and daylight/post settings remain. Eight aperture-sized, inward-facing baked rectangle lights supply a restrained cool window fill after a GI bake. They add no runtime light cost or new gameplay. The sun still supplies the warm directional patches. `WindowBounceColor` and `WindowBounceIntensity` are editable in `Harvest Look.asset`.
+
+Rebuild, bake lighting, then bake reflections. The lighting validator now accepts baked window emitters and reports actual farmhouse lightmap assignment. Missing/partial bake data is reported distinctly from light rig setup. Compare both rooms and the stairs at the same camera position/FOV as the submitted images; preserve shadow depth while checking furniture/weapon readability. Source/layout checks passed, but rendered intensity and bake results still require Unity review.

@@ -81,7 +81,7 @@ namespace Harvest.Editor
             {Debug.Log("Artist-owned farmhouse assigned: review its lighting rig manually.");return;}
             if(root==null) {Debug.LogError("Fixture/probe rig is missing. Rebuild The Line.");return;}
             foreach(Light light in root.GetComponentsInChildren<Light>())
-                if(light.shadows==LightShadows.None || light.lightmapBakeType!=LightmapBakeType.Mixed || light.range<=0f)
+                if(light.shadows==LightShadows.None || (light.type==LightType.Rectangle?light.lightmapBakeType!=LightmapBakeType.Baked:light.lightmapBakeType!=LightmapBakeType.Mixed) || light.range<=0f)
                 {Debug.LogError("Practical light lacks shadows, mixed lighting or range: "+light.transform.parent.name);errors++;}
             var group=root.GetComponentInChildren<LightProbeGroup>();
             if(group==null || group.probePositions.Length<32) {Debug.LogError("Room/approach light probes are missing.");errors++;}
@@ -94,6 +94,18 @@ namespace Harvest.Editor
             if(Lightmapping.lightingSettings==null) {Debug.LogError("Persistent lighting settings are missing.");errors++;}
             if(LightmapSettings.lightmaps==null || LightmapSettings.lightmaps.Length==0)
                 Debug.LogWarning("The scene has no baked lightmaps yet. Realtime lighting is a preview; run Bake The Line Lighting for bounce/contact shading.");
+            if(house!=null && LightmapSettings.lightmaps!=null && LightmapSettings.lightmaps.Length>0)
+            {
+                int assigned=0,total=0;
+                foreach(MeshRenderer renderer in house.GetComponentsInChildren<MeshRenderer>())
+                {
+                    if((GameObjectUtility.GetStaticEditorFlags(renderer.gameObject)&StaticEditorFlags.ContributeGI)==0) continue;
+                    total++;
+                    if(renderer.lightmapIndex>=0 && renderer.lightmapIndex<LightmapSettings.lightmaps.Length) assigned++;
+                }
+                Debug.Log("Farmhouse lightmap assignment: "+assigned+" / "+total+" GI renderers.");
+                if(total>0 && assigned<total*.8f) Debug.LogWarning("Most farmhouse surfaces lack lightmaps. Re-bake the current scene and inspect the Lighting window.");
+            }
             if(errors==0) Debug.Log("Lighting setup checks passed. Inspect stair transitions, window shadows, props and moving actors after the bake; setup checks do not approve the rendered result.");
         }
         static bool CanEdit()

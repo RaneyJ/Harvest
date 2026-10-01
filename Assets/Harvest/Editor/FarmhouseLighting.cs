@@ -19,10 +19,21 @@ namespace Harvest.Editor
             var root=new GameObject(RootName).transform;root.position=l.WorldOrigin;
             Material steel=AssetDatabase.LoadAssetAtPath<Material>(FarmhouseMaterialLibrary.MaterialPath("Steel"));
             if(steel==null) throw new InvalidOperationException("Farmhouse steel material is missing.");
+            // Upgrade only the exact previous defaults; preserve deliberate edits, including disabled lamps.
+            if(look.InteriorReadabilityRevision<1)
+            {
+                if(Mathf.Approximately(look.GroundPracticalIntensity,1.4f)) look.GroundPracticalIntensity=5.5f;
+                if(Mathf.Approximately(look.UpperPracticalIntensity,1.2f)) look.UpperPracticalIntensity=4.5f;
+                if(Mathf.Approximately(look.PracticalRange,7f)) look.PracticalRange=9f;
+                look.InteriorReadabilityRevision=1;EditorUtility.SetDirty(look);
+            }
             Material bulb=BulbMaterial();
             Pendant(root,"Ground practical",new Vector3(2.4f,l.UpperFloorTop-.18f,2.3f),steel,bulb,look.GroundPracticalIntensity,look);
             Pendant(root,"Upper practical",new Vector3(2.8f,l.EavesHeight-.14f,-3.2f),steel,bulb,look.UpperPracticalIntensity,look);
+            Pendant(root,"Ground entry practical",new Vector3(1.8f,l.UpperFloorTop-.18f,-3.6f),steel,bulb,look.GroundPracticalIntensity,look);
+            Pendant(root,"Upper rear practical",new Vector3(1.8f,l.EavesHeight-.14f,3.4f),steel,bulb,look.UpperPracticalIntensity,look);
             Sconce(root,steel,bulb,l,look);
+            WindowBounce(root,l,look);
             Reflection(root,"Ground room reflection",new Vector3(0,(l.GroundFloorTop+l.UpperFloorTop-.18f)*.5f,0),
                 new Vector3(l.HalfWidth*2f-.3f,l.UpperFloorTop-l.GroundFloorTop-.28f,l.HalfDepth*2f-.3f),256,10,40);
             Reflection(root,"Upper room reflection",new Vector3(0,(l.UpperFloorTop+l.EavesHeight-.14f)*.5f,0),
@@ -56,6 +67,25 @@ namespace Harvest.Editor
             GameObjectUtility.SetStaticEditorFlags(glass,StaticEditorFlags.BatchingStatic); // Opaque emissive glass must not occlude its own baked light.
             Box(fixture,"Porch lamp cap",steel,new Vector3(0,.05f,-.14f),new Vector3(.15f,.025f,.15f));
             Point(fixture,new Vector3(0,-.025f,-.14f),look.PorchPracticalIntensity,4f,look.PracticalColor);
+        }
+        static void WindowBounce(Transform root,FarmhouseLayout l,HarvestVisualProfile look)
+        {
+            float inset=l.WallThickness*.5f+.025f;
+            foreach(float x in new[]{-3.8f,3.8f}) Area("Ground front "+x,new Vector3(x,1.60f,-l.HalfDepth+inset),Vector3.forward,1.8f,1.10f);
+            Area("Ground road",new Vector3(l.HalfWidth-inset,1.55f,1),Vector3.left,3f,1.10f);
+            Area("Ground field",new Vector3(-l.HalfWidth+inset,1.55f,3),Vector3.right,2.2f,1.10f);
+            Area("Upper front",new Vector3(1,l.UpperFloorTop+1.575f,-l.HalfDepth+inset),Vector3.forward,3f,1.25f);
+            Area("Upper rear",new Vector3(1,l.UpperFloorTop+1.575f,l.HalfDepth-inset),Vector3.back,3f,1.25f);
+            Area("Upper road",new Vector3(l.HalfWidth-inset,l.UpperFloorTop+1.575f,1),Vector3.left,3.8f,1.25f);
+            Area("Upper field",new Vector3(-l.HalfWidth+inset,l.UpperFloorTop+1.575f,3),Vector3.right,2.2f,1.25f);
+            void Area(string name,Vector3 position,Vector3 inward,float width,float height)
+            {
+                var go=new GameObject(name+" baked sky fill");go.transform.SetParent(root,false);go.transform.localPosition=position;
+                go.transform.localRotation=Quaternion.LookRotation(inward);
+                var light=go.AddComponent<Light>();light.type=LightType.Rectangle;light.areaSize=new Vector2(width,height);
+                light.lightmapBakeType=LightmapBakeType.Baked;light.color=look.WindowBounceColor;light.intensity=look.WindowBounceIntensity;
+                light.shadows=LightShadows.Soft;light.range=10f;
+            }
         }
         static void Point(Transform fixture,Vector3 position,float intensity,float range,Color color)
         {
