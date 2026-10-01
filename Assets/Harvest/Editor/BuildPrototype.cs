@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "36";
+        const string SceneVersion = "37";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the farmhouse household detail pass. Rebuild The Line for an entrance rug, family keepsakes, dining details and restrained entry/stair wear. Save manual edits first. Bake lighting and reflections after rebuilding.",
+                    "This scene predates the farmyard composition pass. Rebuild The Line for tyre-worn tracks, boundary vegetation and yard supply clusters. Save manual edits first. Bake lighting and reflections after rebuilding.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -63,6 +63,8 @@ namespace Harvest.Editor
 
             FarmEncounterGeometry.Build(soil, road, grain, concrete, rust);
             FarmDetailGeometry.Build();
+            HarvestSurfaceLibrary.Apply();
+            FarmyardPolish.Build();
             // Waist-high cover with open lanes. Everything is ordinary farm or freight infrastructure.
             Block("Checkpoint barricade left", concrete, new Vector3(-5, 0.7f, -7), new Vector3(4.5f, 1.4f, 1.3f));
             Block("Checkpoint barricade right", concrete, new Vector3(5, 0.7f, -7), new Vector3(4.5f, 1.4f, 1.3f));

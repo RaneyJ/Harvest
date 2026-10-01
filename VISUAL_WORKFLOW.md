@@ -68,3 +68,11 @@ Only materials still using the exact original installed plaster maps are upgrade
 ## Farmhouse interior dressing (version 26)
 
 Run **Harvest > Build The Line Prototype**, then the farmhouse foundation validation in Edit and Play mode. The dressing layout asset controls five areas independently and supports artist-owned static prefab overrides. Review the rear kitchen, dining benches, farm seed rack, upstairs cot and work terminal. The source meshes and circulation layout were checked independently; Unity rendering, collision proxy assembly, unwrapping, navigation and performance still require Editor verification. See [FARMHOUSE_FOUNDATION.md](FARMHOUSE_FOUNDATION.md) for ownership and acceptance details. Lighting refinement follows approval of this placement pass.
+
+### Farmyard composition (scene 37)
+
+The farmhouse detail pass is paused while the yard catches up. `FarmyardPolish` supplies paired tyre-worn strips on the existing freight road and access track, sparse low dry vegetation at field/road boundaries, and two supply clusters outside the central access lane. The existing crop layout, terrain collision and encounter configuration remain. Surface accents and grass are visual only; supply boxes have separate stable collision. Ground accents reuse the soil surface with a modest darker tint, with no added shader or particle effect.
+
+`Farmyard Art Profile.asset` controls tracks, vegetation and supplies, and exposes authored supply/vegetation/small-debris prefabs. Generated fallback assets remain separate from artist-owned replacements. See [ENVIRONMENT_ART_PLAN.md](ENVIRONMENT_ART_PLAN.md) for the small initial shortlist and integration criteria. No external model or paid package is imported by this pass.
+
+Rebuild scene 37, inspect tyre strip repetition, grass scale and supply composition at gameplay FOV, run farmhouse checks in Edit and Play mode, then bake lighting/reflections. Check the access track, evacuation pad and both field approaches during a full encounter. Source/math checks do not validate Unity compilation, rendering or performance.
