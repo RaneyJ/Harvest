@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "37";
+        const string SceneVersion = "38";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the farmyard composition pass. Rebuild The Line for tyre-worn tracks, boundary vegetation and yard supply clusters. Save manual edits first. Bake lighting and reflections after rebuilding.",
+                    "This scene predates the farmyard composition pass. Rebuild The Line for the dressed shed, silo loading station, freight construction and porch staging. Save manual edits first. Bake lighting and reflections after rebuilding.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -81,6 +81,8 @@ namespace Harvest.Editor
             Block("Road barrier", concrete, new Vector3(3, 0.6f, 8), new Vector3(3, 1.2f, 1));
             Block("Road barrier", concrete, new Vector3(-3, 0.6f, 19), new Vector3(3, 1.2f, 1));
             Block("Burned freight car", rust, new Vector3(-13, 2, 38), new Vector3(5, 4, 12));
+
+            FarmyardComposition.Build();
 
             GameObject evacuation = Block("Evacuation pad", concrete, new Vector3(0, 0.08f, -33), new Vector3(10, 0.16f, 8));
             Block("Evac beacon", beacon, new Vector3(0, 2.7f, -36), new Vector3(0.32f, 5.2f, 0.32f));
