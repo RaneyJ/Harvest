@@ -36,7 +36,7 @@ The farmhouse keeps the original footprint, floor spacing and road-facing firing
 
 ## Build and review
 
-1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 28 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
+1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 29 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
 2. Run **Harvest > Validate Farmhouse Foundation**. It checks prefab connection and persistent mesh ownership in Edit mode. Both modes check hierarchy/collision separation, finite geometry, triangle winding, UV channels, tangents, standing-body clearance, support under circulation points and firing sightlines. Play mode does not require editor prefab/asset ownership for the live objects.
 3. Enter Play mode, run the same menu to additionally check a complete marine NavMesh path from downstairs to the upstairs window.
 4. Walk the front and rear entrances, stairs in both directions, landing and upstairs firing approaches. Check standing/crouching and grenade behavior. The capsule checks allow adjacent traversable stair risers; they do not replace a real CharacterController traversal check.
@@ -89,3 +89,12 @@ The same version replaces full-room floor strips with roughly 20cm-wide, 2.3m-lo
 Interior openings gain timber casings, sill boards and aprons; floor/wall joins gain low skirting that stops at doorways. Thin plaster ceiling finishes follow the existing upper-floor sections and preserve the stair opening. Roof edges now have fascia, soffits, pitched ridge-cap wings and open gutters with end caps and wall-bracketed downpipes. These finishes have no collision; the original shell, floors, roof collision, movement routes and firing apertures are retained. The shared generated house meshes are eligible for static batching as well as GI.
 
 After rebuilding, inspect window ledges, doorway feet, ceilings over stairs, the roof ridge and rainwater joins. Source dimensions can be checked here; Unity mesh generation, UV unwrap and visual quality still require an Editor review.
+
+
+## Farmyard and horizon refinement (version 29)
+
+The shed and storage props use dimensioned bevelled meshes with metre UVs, lightmap UVs and tangents instead of scaled primitive cubes. Bare starter timber/roofing surfaces use the approved farmhouse scans; imported or mapped prop material overrides retain their own surfaces. Shed battens, headers, post shoes and corner braces articulate construction. Roof seams now follow the shed pitch. Crates gain corner uprights and strap fasteners.
+
+The grain silo gains a pitched lid, rolled rings, a foundation collar and door handle. Its ladder is tangent to the cylindrical surface, with two rails and stand-offs instead of floating axis-aligned rungs. The original six-metre-square collision envelope remains. Small finish geometry remains visual-only. No encounter placements, waves or combat systems change.
+
+Distant settlement boxes become pitched agricultural buildings with selective annexes and silo silhouettes, backed by rolling ground outside the playable terrain. They have no collision, navigation or shadow casting; distant geometry does not contribute to the farmhouse lightmap atlas. Meshes are persistent generated assets. Check the shed interior, silo ladder and horizon from the road in Unity; source checks are not a rendered approval.

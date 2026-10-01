@@ -96,15 +96,7 @@ namespace Harvest.Editor
             ground.GetComponent<Renderer>().sharedMaterial = hills;
             ground.GetComponent<Renderer>().shadowCastingMode = ShadowCastingMode.Off;
             Object.DestroyImmediate(ground.GetComponent<Collider>());
-            for (int i = 0; i < 7; i++)
-            {
-                GameObject building = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                building.name = "Distant agricultural settlement"; building.transform.SetParent(root, false);
-                building.transform.position = new Vector3(-52f + i * 15f, 3f, 115f + (i % 3) * 8f);
-                building.transform.localScale = new Vector3(8f + i % 3 * 2f, 6f, 12f);
-                building.GetComponent<Renderer>().sharedMaterial = buildings;
-                Object.DestroyImmediate(building.GetComponent<Collider>());
-            }
+            DistantFarmLandscape.Build(root,hills,buildings);
         }
     }
 }
