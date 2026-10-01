@@ -265,13 +265,7 @@ namespace Harvest.Editor
         static void Interior(Assembly a)
         {
             FarmhouseLayout l = a.Layout;
-            Part(a, a.Interior, "Kitchen counter", a.Timber, new Vector3(-3.6f, 0.62f, l.HalfDepth - 1f), new Vector3(3f, 1f, 0.8f), 0.025f, true);
-            Part(a, a.Interior, "Kitchen worktop", a.Stone, new Vector3(-3.6f, 1.15f, l.HalfDepth - 1f), new Vector3(3.12f, 0.08f, 0.9f));
-            Part(a, a.Interior, "Farm table top", a.Timber, new Vector3(2.7f, 0.90f, 3.5f), new Vector3(2.2f, 0.12f, 1.2f), 0.02f, true);
-            foreach (int x in new[] { -1, 1 })
-                foreach (int z in new[] { -1, 1 })
-                    Part(a, a.Interior, "Table leg " + x + " " + z, a.Timber,
-                        new Vector3(2.7f + x * 0.85f, 0.48f, 3.5f + z * 0.45f), new Vector3(0.12f, 0.72f, 0.12f), 0.01f, true);
+            FarmhouseInteriorDressing.Build(a.Interior,a.Collision,l,a.Timber,a.Steel,a.Stone);
             // Cover beside the opening, with a clear central firing lane and approach route.
             foreach (int side in new[] { -1, 1 })
                 Part(a, a.Interior, "Upstairs agricultural crate " + side, a.Timber,

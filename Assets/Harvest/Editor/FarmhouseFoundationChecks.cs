@@ -14,7 +14,7 @@ namespace Harvest.Editor
             try
             {
                 var house = UnityEngine.Object.FindFirstObjectByType<FarmhouseFoundation>();
-                Require(house != null, "Rebuild The Line (version 25) before checking the farmhouse.");
+                Require(house != null, "Rebuild The Line (version 26) before checking the farmhouse.");
                 FarmhouseLayout l = house.Layout;
                 FarmhouseFoundationBuilder.ValidateLayout(l);
                 // Prefab connections and asset ownership are authoring checks, not runtime prerequisites.
@@ -55,6 +55,7 @@ namespace Harvest.Editor
                     new Vector3(l.HalfWidth+2f,l.UpperFloorTop+1.6f,1f));
                 CheckSightline(house, new Vector3(1f,l.UpperFloorTop+1.6f,-l.HalfDepth+0.9f),
                     new Vector3(1f,l.UpperFloorTop+1.6f,-l.HalfDepth-2f));
+                if (l.AuthoredPrefab == null) CheckDressingAccess(house);
                 if (Application.isPlaying) CheckNavigation(house);
                 Debug.Log("Farmhouse foundation checks passed: mesh geometry/UVs, generated wall coverage/UV continuity, hierarchy groups, collision separation, 1.9m body clearance, stairs and firing windows" +
                     (Application.isPlaying ? ", and downstairs-to-upstairs marine navigation." : ", persistent mesh assets and prefab connection. Run again in Play mode to also check marine navigation."));
@@ -165,6 +166,27 @@ namespace Harvest.Editor
             Vector3 origin = house.transform.TransformPoint(from), delta = house.transform.TransformPoint(to) - origin;
             foreach (RaycastHit hit in Physics.RaycastAll(origin, delta.normalized, delta.magnitude, ~0, QueryTriggerInteraction.Ignore))
                 Require(!hit.collider.transform.IsChildOf(house.transform), "Firing window is blocked by " + hit.collider.name);
+        }
+        static void CheckDressingAccess(FarmhouseFoundation house)
+        {
+            FarmhouseLayout l=house.Layout;
+            Require(house.transform.Find("Interior/Dressing") != null, "Missing dressing assembly. Rebuild version 26.");
+            // Fixed circulation checks also catch placement edits that obstruct the central routes.
+            for(float z=-l.HalfDepth+0.65f;z<l.HalfDepth-0.65f;z+=0.8f)
+            {
+                CheckBody(house,new Vector3(0f,l.GroundFloorTop,z),0f);
+                CheckBody(house,new Vector3(0f,l.UpperFloorTop,z),0f);
+            }
+            for(float x=l.StairX;x<0f;x+=0.6f)
+                CheckBody(house,new Vector3(x,l.UpperFloorTop,l.StairEnd+0.6f),0f);
+            for(float x=0f;x<l.HalfWidth-0.8f;x+=0.6f)
+                CheckBody(house,new Vector3(x,l.UpperFloorTop,1f),0f);
+            foreach(Vector3 point in new[] {
+                new Vector3(-3.6f,l.GroundFloorTop,l.HalfDepth-1.5f),
+                new Vector3(2.7f,l.GroundFloorTop,1.7f),
+                new Vector3(-l.HalfWidth+2.9f,l.UpperFloorTop,l.HalfDepth-1.4f),
+                new Vector3(l.HalfWidth-2.3f,l.UpperFloorTop,-l.HalfDepth+2.25f) })
+                CheckBody(house,point,0f);
         }
         static void CheckNavigation(FarmhouseFoundation house)
         {
