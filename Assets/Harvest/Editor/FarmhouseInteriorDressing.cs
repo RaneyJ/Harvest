@@ -36,6 +36,10 @@ namespace Harvest.Editor
             Add("Entry details",settings.EntryDetails,new Vector3(house.HalfWidth-house.WallThickness*.5f,house.GroundFloorTop,-house.HalfDepth+3.9f),90f,dressing.transform,collision,p,FarmhouseConceptDetails.Entry);
             Add("Firing supplies",settings.FiringPosition,new Vector3(house.HalfWidth-1.1f,house.UpperFloorTop,2.4f),90f,dressing.transform,collision,p,FarmhouseConceptDetails.Firing);
             Add("Office details",settings.OfficeDetails,new Vector3(house.HalfWidth-1.75f,house.UpperFloorTop,-house.HalfDepth+2.7f),0f,dressing.transform,collision,p,FarmhouseConceptDetails.Office);
+            Add("Entrance rug and papers",settings.EntranceRug,new Vector3(0,house.GroundFloorTop,-house.HalfDepth+1.8f),0f,dressing.transform,collision,p,FarmhouseLivedInDetails.Entrance);
+            Add("Household keepsakes",settings.HouseholdKeepsakes,new Vector3(-1.95f,house.GroundFloorTop,-house.HalfDepth+.45f),180f,dressing.transform,collision,p,FarmhouseLivedInDetails.Keepsakes);
+            Add("Dining household details",settings.DiningDetails,new Vector3(2.7f,house.GroundFloorTop,house.HalfDepth-4.8f),0f,dressing.transform,collision,p,FarmhouseLivedInDetails.Dining);
+            if(settings.EnableInteriorWear) FarmhouseLivedInDetails.Wear(interior,house,wood);
             foreach(FarmhouseRoom room in FarmhouseRoomPlan.Create(house))
             {
                 if(room.Kind==FarmhouseRoomKind.Utility)

@@ -16,6 +16,10 @@ namespace Harvest
     [CreateAssetMenu(menuName = "Harvest/Environment/Farmhouse Dressing Layout")]
     public sealed class FarmhouseDressingLayout : ScriptableObject
     {
+        public bool EnableInteriorWear = true;
+        public FarmhouseDressingCluster EntranceRug = new FarmhouseDressingCluster();
+        public FarmhouseDressingCluster HouseholdKeepsakes = new FarmhouseDressingCluster();
+        public FarmhouseDressingCluster DiningDetails = new FarmhouseDressingCluster();
         public FarmhouseDressingCluster Kitchen = new FarmhouseDressingCluster();
         public FarmhouseDressingCluster Dining = new FarmhouseDressingCluster();
         public FarmhouseDressingCluster FarmStorage = new FarmhouseDressingCluster();

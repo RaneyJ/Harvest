@@ -159,3 +159,13 @@ The concept sheet's working-farm details now extend around the exterior: bolted 
 Small irregular opaque patches supply plaster foot wear and a localized dry plasma scar between the road-side windows. They do not alter wall openings or add destruction, particles, glow or another shader. Exposed-plaster/scorch materials persist and can be tuned. This is modeled surface variation; high-resolution chipped paint, rust maps and detailed weathering remain future art work.
 
 Canopy, tank and pad collision live in the farmhouse Collision group. Door approaches, stair/room circulation and the central firing sightlines remain open. Rebuild scene 35, run the farmhouse checks in Edit and Play mode, then bake lighting and reflections. Review porch lining, rear canopy/pipes, pad-to-soil contact and wear scale at gameplay FOV. Compilation, UV unwrapping and rendered appearance still require Unity review.
+
+### Entry, dining and stair household pass (scene 36)
+
+The connected ground-floor sequence now has a bordered entrance rug with fringe, a few abandoned papers, a keepsake cabinet with an illustrated family frame and ceramic jar, and a dining place setting with enamel plate, folded linen and utensils. A single fallen chair establishes hurried departure without filling circulation with debris. Its stable collision envelope is transferred into the farmhouse Collision group; it adds no physics interaction or gameplay system. The picture is a simple modeled illustration, not photographic artwork.
+
+Three new dressing clusters in `Farmhouse Dressing Layout.asset` independently control the entrance rug/papers, household keepsakes and dining details, with the usual enabled/offset/yaw/authored-prefab controls. Existing artist overrides stay protected. `EnableInteriorWear` controls subtle entry and tread scuffs; their persistent material clones the approved plank-floor maps with slightly lighter tint and reduced normal strength. The house and floor materials themselves are preserved.
+
+`FarmhouseLivedInDetails` owns the new detail pass. Flat accent planes have dimensioned persistent meshes, explicit lightmap UVs, upward normals and tangents. Rug, paper and surface accents have no collision or shadow casting. They use stock materials and do not add transparent shaders, particles or visual effects. Full woven fabric textures, detailed dirt maps and photographic keepsakes remain future art work.
+
+Rebuild scene 36 and run the farmhouse validator in Edit and Play mode, then bake lighting and reflections. Review the entry composition, rug border/fringe, table contact, fallen chair, stair visibility and wear strength at gameplay FOV. Source and layout checks cannot confirm Unity compilation, controller traversal or final rendered appearance.
