@@ -17,7 +17,9 @@ namespace Harvest.Editor
                 Require(house != null, "Rebuild The Line (version 23) before checking the farmhouse.");
                 FarmhouseLayout l = house.Layout;
                 FarmhouseFoundationBuilder.ValidateLayout(l);
-                Require(PrefabUtility.GetCorrespondingObjectFromSource(house.gameObject) != null, "Farmhouse should be a connected prefab instance.");
+                // Prefab connections and asset ownership are authoring checks, not runtime prerequisites.
+                if (!Application.isPlaying)
+                    Require(PrefabUtility.GetCorrespondingObjectFromSource(house.gameObject) != null, "Farmhouse should be a connected prefab instance.");
                 foreach (string group in new[] { "Shell", "Roof", "Porch", "Interior", "Trim", "Collision" })
                     Require(house.transform.Find(group) != null, "Missing modular group: " + group);
                 Transform collision = house.transform.Find("Collision");
@@ -28,7 +30,9 @@ namespace Harvest.Editor
                 {
                     Require(filter.transform.localScale == Vector3.one, "Dimensioned mesh should not be scaled: " + filter.name);
                     Mesh mesh = filter.sharedMesh;
-                    Require(mesh != null && AssetDatabase.Contains(mesh), "Mesh must be a persistent asset: " + filter.name);
+                    Require(mesh != null, "Missing mesh: " + filter.name);
+                    if (!Application.isPlaying)
+                        Require(AssetDatabase.Contains(mesh), "Mesh must be a persistent asset: " + filter.name);
                     if (checkedMeshes.Add(mesh)) CheckMesh(mesh);
                 }
                 Physics.SyncTransforms();
@@ -51,8 +55,8 @@ namespace Harvest.Editor
                 CheckSightline(house, new Vector3(1f,l.UpperFloorTop+1.6f,-l.HalfDepth+0.9f),
                     new Vector3(1f,l.UpperFloorTop+1.6f,-l.HalfDepth-2f));
                 if (Application.isPlaying) CheckNavigation(house);
-                Debug.Log("Farmhouse foundation checks passed: persistent meshes/UVs, prefab groups, collision separation, 1.9m body clearance, stairs and firing windows" +
-                    (Application.isPlaying ? ", and downstairs-to-upstairs marine navigation." : ". Run again in Play mode to also check marine navigation."));
+                Debug.Log("Farmhouse foundation checks passed: mesh geometry/UVs, hierarchy groups, collision separation, 1.9m body clearance, stairs and firing windows" +
+                    (Application.isPlaying ? ", and downstairs-to-upstairs marine navigation." : ", persistent mesh assets and prefab connection. Run again in Play mode to also check marine navigation."));
             }
             catch (Exception error) { Debug.LogError("Farmhouse foundation check failed: " + error.Message); }
         }

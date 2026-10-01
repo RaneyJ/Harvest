@@ -37,7 +37,7 @@ The farmhouse keeps the original footprint, floor spacing and road-facing firing
 ## Build and review
 
 1. Save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 23 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
-2. Run **Harvest > Validate Farmhouse Foundation**. It checks prefab connection, hierarchy/collision separation, persistent meshes, finite geometry, triangle winding, UV channels, tangents, standing-body clearance, support under circulation points and firing sightlines.
+2. Run **Harvest > Validate Farmhouse Foundation**. It checks prefab connection and persistent mesh ownership in Edit mode. Both modes check hierarchy/collision separation, finite geometry, triangle winding, UV channels, tangents, standing-body clearance, support under circulation points and firing sightlines. Play mode does not require editor prefab/asset ownership for the live objects.
 3. Enter Play mode, run the same menu to additionally check a complete marine NavMesh path from downstairs to the upstairs window.
 4. Walk the front and rear entrances, stairs in both directions, landing and upstairs firing approaches. Check standing/crouching and grenade behavior. The capsule checks allow adjacent traversable stair risers; they do not replace a real CharacterController traversal check.
 5. Review the house from the approach road, porch, kitchen, stairs, upper front window and upper road window. Capture screenshots at the normal game FOV. Verify scale, roof silhouette, seams, underside visibility and readable interior lighting.
