@@ -67,6 +67,7 @@ namespace Harvest.Editor
                 Shell(a); FloorsAndStairs(a); Roof(a); Porch(a);
                 FarmhouseRooms.Build(a.Interior,a.Collision,layout,a.Plaster,a.TrimTimber,a.Steel);
                 Interior(a); Utilities(a);
+                FarmhouseExteriorDetails.Build(a.Porch,a.Trim,a.Collision,layout,a.Timber,a.Steel,a.Roofing,a.Stone);
                 FarmhouseJoinery.Ceilings(a.Interior,a.Plaster,layout,FloorThickness);
                 AssetDatabase.SaveAssets();
                 GameObject prefab = PrefabUtility.SaveAsPrefabAsset(a.Root, GeneratedPath);
