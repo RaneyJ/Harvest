@@ -16,7 +16,7 @@ namespace Harvest.Editor
             for (int z = -49; z <= 69; z += 6)
                 Box("Faded road center marking", concrete, new Vector3(0f, 0.047f, z), new Vector3(0.12f, 0.012f, 2.8f), false);
             Box("Farm access track", soil, new Vector3(-12f, 0.03f, -12f), new Vector3(10f, 0.06f, 4f));
-            Farmhouse(timber, concrete);
+            FarmhouseFoundationBuilder.Build();
             GrainFields(grain);
             for (int side = -1; side <= 1; side += 2)
                 for (int z = -39; z <= 57; z += 8)
@@ -25,88 +25,6 @@ namespace Harvest.Editor
                     Box("Fence post", timber, new Vector3(side * 30f, 0.75f, z), new Vector3(0.16f, 1.5f, 0.16f));
                     Box("Field fence rail", timber, new Vector3(side * 30f, 0.95f, z + 3.8f), new Vector3(0.1f, 0.12f, 7.6f));
                 }
-        }
-        static void Farmhouse(Material timber, Material stone)
-        {
-            Material plaster = Surface("Farmhouse Plaster", new Color(0.65f, 0.58f, 0.43f));
-            Material roofing = Surface("Farmhouse Roof", new Color(0.19f, 0.23f, 0.21f));
-            GameObject root = new GameObject("Enterable farmhouse");
-            root.transform.position = new Vector3(-19f, 0f, -2f);
-            // Local footprint x=-6..6, z=-7..7. Storey floors are 3.2m apart.
-            Part(root, "Foundation floor", stone, new Vector3(0f, 0.03f, 0f), new Vector3(12f, 0.12f, 14f));
-            Wall(root, "Ground front entrance", plaster, false, -7f, 0f, 3.2f, 12f, 0f, 2.2f, 0f, 2.6f);
-            Wall(root, "Ground rear window", plaster, false, 7f, 0f, 3.2f, 12f, 0f, 2.4f, 0.9f, 2.2f);
-            Wall(root, "Ground road window", plaster, true, 6f, 0f, 3.2f, 14f, 1f, 3.2f, 0.9f, 2.2f);
-            Wall(root, "Ground field window", plaster, true, -6f, 0f, 3.2f, 14f, 3f, 2.4f, 0.9f, 2.2f);
-            Wall(root, "Upstairs front window", plaster, false, -7f, 3.2f, 3.2f, 12f, 1f, 3.2f, 0.85f, 2.3f);
-            Wall(root, "Upstairs rear window", plaster, false, 7f, 3.2f, 3.2f, 12f, 1f, 3.2f, 0.85f, 2.3f);
-            Wall(root, "Upstairs road firing window", plaster, true, 6f, 3.2f, 3.2f, 14f, 1f, 4f, 0.85f, 2.3f);
-            Wall(root, "Upstairs field window", plaster, true, -6f, 3.2f, 3.2f, 14f, 3f, 2.4f, 0.85f, 2.3f);
-            // Leave a genuine stairwell opening. No ceiling collider crosses the flight.
-            Part(root, "Upper main floor", timber, new Vector3(1.7f, 3.12f, 0f), new Vector3(8.6f, 0.16f, 14f));
-            Part(root, "Upper front floor", timber, new Vector3(-4.3f, 3.12f, -5.95f), new Vector3(3.4f, 0.16f, 2.1f));
-            Part(root, "Upper rear landing", timber, new Vector3(-4.3f, 3.12f, 4.25f), new Vector3(3.4f, 0.16f, 5.5f));
-            for (int step = 0; step < 16; step++)
-            {
-                float top = (step + 1) * 0.2f;
-                Part(root, "Stair tread " + (step + 1), timber, new Vector3(-4.3f, top * 0.5f, -4.7f + step * 0.4f),
-                    new Vector3(2.2f, top, 0.4f));
-            }
-            // Guard the open upper floor edge without closing the stair exit.
-            Part(root, "Stairwell guard", timber, new Vector3(-2.65f, 3.7f, -1.8f), new Vector3(0.1f, 1f, 6.2f));
-            Part(root, "Entrance porch", stone, new Vector3(0f, 0.03f, -8.2f), new Vector3(5f, 0.12f, 2.4f));
-            for (int side = -1; side <= 1; side += 2)
-            {
-                Part(root, "Porch post", timber, new Vector3(side * 2.25f, 1.5f, -9f), new Vector3(0.2f, 3f, 0.2f));
-                GameObject roof = Part(root, "Pitched roof", roofing, new Vector3(side * 3.1f, 7.2f, 0f), new Vector3(6.7f, 0.2f, 15f));
-                roof.transform.localRotation = Quaternion.Euler(0f, 0f, side * -14f);
-            }
-            for (int side = -1; side <= 1; side += 2)
-            {
-                Vector3[] vertices = { new Vector3(-6f, 6.4f, side * 7f), new Vector3(6f, 6.4f, side * 7f), new Vector3(0f, 8f, side * 7f) };
-                Mesh gable = SaveMesh("Farmhouse Gable " + side,
-                    new[] { vertices[0], vertices[1], vertices[2], vertices[2], vertices[1], vertices[0] },
-                    new[] { 0, 1, 2, 3, 4, 5 },
-                    new[] { Vector2.zero, Vector2.right, Vector2.up, Vector2.up, Vector2.right, Vector2.zero });
-                GameObject panel = MeshObject("Roof gable", gable, plaster);
-                panel.transform.SetParent(root.transform, false);
-                panel.AddComponent<MeshCollider>().sharedMesh = gable;
-            }
-            Part(root, "Porch roof", roofing, new Vector3(0f, 3f, -8.2f), new Vector3(5.4f, 0.2f, 2.8f));
-            Part(root, "Kitchen counter", stone, new Vector3(3.5f, 0.65f, 5f), new Vector3(3f, 1.1f, 0.8f));
-            Part(root, "Farm table", timber, new Vector3(1f, 0.75f, 2f), new Vector3(2.2f, 0.15f, 1.2f));
-            for (int side = -1; side <= 1; side += 2)
-                Part(root, "Table support", timber, new Vector3(1f + side * 0.8f, 0.4f, 2f), new Vector3(0.15f, 0.7f, 0.8f));
-        }
-        static void Wall(GameObject root, string name, Material material, bool alongZ, float fixedAxis,
-            float floor, float height, float width, float openingCenter, float openingWidth, float sill, float lintel)
-        {
-            float left = openingCenter - openingWidth * 0.5f;
-            float right = openingCenter + openingWidth * 0.5f;
-            Panel(root, name + " left", material, alongZ, fixedAxis, (-width * 0.5f + left) * 0.5f,
-                floor + height * 0.5f, left + width * 0.5f, height);
-            Panel(root, name + " right", material, alongZ, fixedAxis, (right + width * 0.5f) * 0.5f,
-                floor + height * 0.5f, width * 0.5f - right, height);
-            if (sill > 0f) Panel(root, name + " sill", material, alongZ, fixedAxis, openingCenter,
-                floor + sill * 0.5f, openingWidth, sill);
-            Panel(root, name + " lintel", material, alongZ, fixedAxis, openingCenter,
-                floor + (height + lintel) * 0.5f, openingWidth, height - lintel);
-        }
-        static Material Surface(string name, Color color)
-        {
-            string path = "Assets/Harvest/Materials/" + name + ".mat";
-            Material material = AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (material != null) return material;
-            material = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            material.color = color;
-            AssetDatabase.CreateAsset(material, path);
-            return material;
-        }
-        static void Panel(GameObject root, string name, Material material, bool alongZ, float fixedAxis,
-            float center, float y, float width, float height)
-        {
-            Part(root, name, material, alongZ ? new Vector3(fixedAxis, y, center) : new Vector3(center, y, fixedAxis),
-                alongZ ? new Vector3(0.22f, height, width) : new Vector3(width, height, 0.22f));
         }
         static void Terrain(Material material)
         {
@@ -182,14 +100,6 @@ namespace Harvest.Editor
             root.AddComponent<MeshFilter>().sharedMesh = mesh;
             root.AddComponent<MeshRenderer>().sharedMaterial = material;
             return root;
-        }
-        static GameObject Part(GameObject root, string name, Material material, Vector3 position, Vector3 size)
-        {
-            GameObject part = Box(name, material, Vector3.zero, size);
-            part.transform.SetParent(root.transform, false); part.transform.localPosition = position;
-            if (name.StartsWith("Upper ") || name.StartsWith("Stair tread "))
-                part.AddComponent<FootstepSurface>().Kind = FootstepSurfaceKind.Wood;
-            return part;
         }
         static GameObject Box(string name, Material material, Vector3 position, Vector3 size, bool collider = true)
         {

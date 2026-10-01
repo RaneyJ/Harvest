@@ -5,7 +5,7 @@ The Line now targets Unity 6000.3 / URP 17.3 with Render Graph enabled and linea
 ## Pull and rebuild
 
 1. Let Unity Package Manager resolve URP after pulling `prototype/the-line`.
-2. Save manual scene changes, then run **Harvest > Build The Line Prototype**. Version 22 rebuilds the generated scene, creates persistent rendering assets and migrates Harvest Standard materials in place. Weapon tuning, audio and configured waves remain on their existing assets.
+2. Save manual scene changes, then run **Harvest > Build The Line Prototype**. Version 23 rebuilds the generated scene and installs the modular farmhouse foundation. Persistent rendering assets and existing material tuning are retained. Weapon tuning, audio and configured waves remain on their existing assets.
 3. Run **Harvest > Validate Visual Foundation**. Check the Console for shader errors.
 4. In Play mode inspect farmhouse interiors, shadows, rifle tracers, plasma, grenade fading, armor/charge tint feedback and sustained-fire suppression. Also check upstairs movement, cover and all waves. The build environment used for this change has no Unity Editor; these runtime and visual checks still need to be run in Unity.
 
@@ -50,3 +50,7 @@ The current effect replaces the earlier replacement-target blit path. It uses tw
 Run **Harvest > Run Suppression Render Check (Play Mode)** with the Game view active. The updated test renders four colored quadrants and checks reference → copy-only overlay → actual blur → recovery, first without post-processing and then with HDR, post-processing and FXAA enabled. It checks five GPU-read pixels: quadrant interiors must preserve their colors, the boundary must actually soften, and recovery must restore the reference. Unlike the older constant-color test, it can detect collapsed UVs, white/black source sampling, flipped quadrants and a blur pass that never applies. The test uses an offscreen camera and removes its temporary geometry, textures and materials. It remains unrun here because Unity/GPU rendering is unavailable. This script/shader-only update needs a fresh Play session after import, not a scene asset rebuild.
 
 The blur radius now has a camera-local `BlurRadiusMultiplier` defaulting to 3. Existing 2.5-pixel settings produce a 7.5-pixel sampling radius at full suppression without changing opacity, buildup or gameplay penalties. This new field applies to existing camera components after script import; no scene rebuild is needed. Tune the multiplier in `SuppressionScreenBlur` for the desired intensity.
+
+## Approved farmhouse modeling foundation (version 23)
+
+The approved courtyard, exterior and interior concepts now guide a dimensioned modular farmhouse. Run **Harvest > Build The Line Prototype**, then **Harvest > Validate Farmhouse Foundation** in Edit mode and again in Play mode. The latter additionally checks marine navigation from the entrance to the upstairs firing position. See [FARMHOUSE_FOUNDATION.md](FARMHOUSE_FOUNDATION.md) for dimensions, asset ownership, review steps and subsequent art tasks. This is a modeling foundation with base materials; finished textures, battle damage and final baked lighting are subsequent passes. Unity mesh unwrapping, scene rendering, controller traversal and navigation validation remain to be exercised in the Editor.

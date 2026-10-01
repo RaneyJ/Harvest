@@ -56,27 +56,6 @@ namespace Harvest.Editor
                 foreach (int side in new[] { -1, 1 })
                     Box("Crate metal strap", iron, site + new Vector3(side * 0.5f, 0.6f, 0f), new Vector3(0.045f, 1.21f, 1.31f));
             }
-            GameObject house = GameObject.Find("Enterable farmhouse");
-            if (house != null)
-            {
-                // Road-facing windows: exact openings from the main farmhouse recipe.
-                foreach (float storey in new[] { 0f, 3.2f })
-                {
-                    float width = storey == 0f ? 3.2f : 4f;
-                    float sill = storey == 0f ? 0.9f : 0.85f;
-                    float lintel = storey == 0f ? 2.2f : 2.3f;
-                    Vector3 origin = house.transform.position;
-                    Box("Window upper trim", pale, origin + new Vector3(6.13f, storey + lintel, 1f), new Vector3(0.08f, 0.1f, width + 0.18f));
-                    Box("Window sill trim", pale, origin + new Vector3(6.15f, storey + sill, 1f), new Vector3(0.16f, 0.1f, width + 0.18f));
-                    foreach (int side in new[] { -1, 1 })
-                        Box("Window side trim", pale, origin + new Vector3(6.13f, storey + (sill + lintel) * 0.5f, 1f + side * width * 0.5f), new Vector3(0.08f, lintel - sill, 0.08f));
-                }
-                Box("Farmhouse chimney", iron, house.transform.position + new Vector3(-3f, 7.1f, 4f), new Vector3(0.6f, 2.2f, 0.6f));
-                Box("Farmhouse gutter", iron, house.transform.position + new Vector3(6.3f, 6.4f, 0f), new Vector3(0.12f, 0.1f, 14.9f));
-                Box("Farmhouse drain pipe", iron, house.transform.position + new Vector3(6.3f, 3.2f, 6.5f), new Vector3(0.09f, 6.4f, 0.09f));
-                foreach (int side in new[] { -1, 1 })
-                    Box("Farmhouse porch bench", timber, house.transform.position + new Vector3(side * 1.8f, 0.45f, -8.5f), new Vector3(0.6f, 0.18f, 1.5f));
-            }
             Sign("HARVEST / FREIGHT ROAD", new Vector3(10.2f, 2f, -28f), pale, timber, 180f);
             Sign("CHECKPOINT / KEEP CLEAR", new Vector3(-9.5f, 1.7f, -7f), warning, dark, 180f);
             Sign("EVACUATION", new Vector3(7f, 1.8f, -34f), pale, dark, 180f);

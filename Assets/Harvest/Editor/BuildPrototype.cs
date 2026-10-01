@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "22";
+        const string SceneVersion = "23";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the URP visual foundation. Rebuild The Line to migrate materials and apply the farmhouse visual pass. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
+                    "This scene predates the approved farmhouse modeling foundation. Rebuild The Line to install its modular prefab. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -122,7 +122,8 @@ namespace Harvest.Editor
             DroppedWeapon dropPrefab = MakeDropPrefab();
             GameObject huntingSupply = (GameObject)PrefabUtility.InstantiatePrefab(dropPrefab.gameObject);
             huntingSupply.name = "Farmhouse hunting rifle supply";
-            huntingSupply.transform.position = new Vector3(-15f, 3.75f, -1f);
+            FarmhouseLayout farmhouseLayout = AssetDatabase.LoadAssetAtPath<FarmhouseLayout>(FarmhouseFoundationBuilder.LayoutPath);
+            huntingSupply.transform.position = farmhouseLayout.WorldOrigin + new Vector3(farmhouseLayout.HalfWidth - 2f, farmhouseLayout.UpperFloorTop + 0.55f, 1f);
             huntingSupply.AddComponent<WeaponSupply>().Definition = huntingRifle;
             CovenantEnemy gruntPrefab = MakeEnemyPrefab<GruntBehavior>("Grunt", grunt, plasmaPistol, dropPrefab, 48, 0, 2.6f, 12f, 0.9f);
             CovenantEnemy jackalPrefab = MakeEnemyPrefab<JackalBehavior>("Jackal", jackal, plasmaPistol, dropPrefab, 75, 85, 2.3f, 16f, 0.9f);
