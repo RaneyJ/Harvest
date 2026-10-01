@@ -18,9 +18,7 @@ namespace Harvest.Editor
                 float width=l.HalfWidth*2f-1.2f;
                 Ring("Porch soil contact",l.WorldOrigin+new Vector3(0,0,-l.HalfDepth-l.PorchDepth*.5f),new Vector2(width*.5f,l.PorchDepth*.5f),.30f,.005f,soil);
             }
-            Ring("Access track feathered edges",new Vector3(-12,0,-12),new Vector2(5,2),.35f,.058f,soil);
-            foreach(int side in new[]{-1,1})
-                Strip("Road shoulder feather "+side,new Vector3(side*9.3f,0,-55),new Vector3(side*9.3f,0,75),Vector3.right*side,.45f,.038f,soil);
+            // Road and access shoulders are now part of the continuous natural-ground meshes.
         }
         static void Ring(string name,Vector3 origin,Vector2 half,float width,float top,Material material)
         {
@@ -28,13 +26,9 @@ namespace Harvest.Editor
             var inner=new[]{new Vector3(-half.x,top,-half.y),new Vector3(half.x,top,-half.y),new Vector3(half.x,top,half.y),new Vector3(-half.x,top,half.y)};
             var outer=new[]{new Vector3(-half.x-width,-.049f,-half.y-width),new Vector3(half.x+width,-.049f,-half.y-width),
                 new Vector3(half.x+width,-.049f,half.y+width),new Vector3(-half.x-width,-.049f,half.y+width)};
+            for(int i=0;i<4;i++) { Vector3 p=outer[i]+origin;outer[i].y=FarmNaturalGround.TerrainHeight(p.x,p.z)-origin.y+.001f; }
             for(int i=0;i<4;i++) {int j=(i+1)%4;Quad(v,t,inner[i]+origin,inner[j]+origin,outer[j]+origin,outer[i]+origin);}
             Save(name,v,t,material);
-        }
-        static void Strip(string name,Vector3 from,Vector3 to,Vector3 outward,float width,float top,Material material)
-        {
-            var v=new List<Vector3>();var t=new List<int>();
-            Quad(v,t,from+Vector3.up*top,to+Vector3.up*top,to+outward*width-Vector3.up*.049f,from+outward*width-Vector3.up*.049f);Save(name,v,t,material);
         }
         static void Quad(List<Vector3> v,List<int> t,Vector3 a,Vector3 b,Vector3 c,Vector3 d)
         {

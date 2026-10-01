@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "38";
+        const string SceneVersion = "39";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the farmyard composition pass. Rebuild The Line for the dressed shed, silo loading station, freight construction and porch staging. Save manual edits first. Bake lighting and reflections after rebuilding.",
+                    "This scene predates the natural ground pass. Rebuild The Line for continuous gravel, blended irregular shoulders, the softened access junction and field contours. Save manual edits first. Bake lighting and reflections after rebuilding.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -61,9 +61,9 @@ namespace Harvest.Editor
             Material armorMaterial = MakeMaterial("Armor Supply", new Color(0.24f, 0.67f, 0.49f), true);
             Material beacon = MakeMaterial("Evac Beacon", new Color(0.17f, 0.9f, 0.35f), true);
 
+            HarvestSurfaceLibrary.Apply();
             FarmEncounterGeometry.Build(soil, road, grain, concrete, rust);
             FarmDetailGeometry.Build();
-            HarvestSurfaceLibrary.Apply();
             FarmyardPolish.Build();
             // Waist-high cover with open lanes. Everything is ordinary farm or freight infrastructure.
             Block("Checkpoint barricade left", concrete, new Vector3(-5, 0.7f, -7), new Vector3(4.5f, 1.4f, 1.3f));

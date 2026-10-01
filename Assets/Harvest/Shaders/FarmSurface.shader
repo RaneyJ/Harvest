@@ -6,6 +6,12 @@ Shader "Harvest/Farm Surface"
         _BaseMap ("Base map (shadow compatibility)", 2D) = "white" {}
         _SurfaceMap ("Weathered surface", 2D) = "white" {}
         _WorldScale ("Repeats per meter", Float) = 0.65
+        _GroundMap ("Ground blend surface", 2D) = "white" {}
+        _GroundTint ("Ground blend tint", Color) = (1,1,1,1)
+        _GroundScale ("Ground repeats per meter", Float) = 0.8
+        _GroundSmoothness ("Ground smoothness", Range(0,1)) = 0.06
+        _GroundBlendEnabled ("Enable vertex ground blend", Float) = 0
+        _VertexTintStrength ("Vertex ground variation", Range(0,1)) = 0
         _Smoothness ("Smoothness", Range(0,1)) = 0.15
         _Metallic ("Metallic", Range(0,1)) = 0
         _Cutoff ("Cutoff", Range(0,1)) = 0.5
@@ -18,10 +24,16 @@ Shader "Harvest/Farm Surface"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             TEXTURE2D(_SurfaceMap); SAMPLER(sampler_SurfaceMap);
+            TEXTURE2D(_GroundMap); SAMPLER(sampler_GroundMap);
             CBUFFER_START(UnityPerMaterial)
                 float4 _BaseMap_ST;
                 half4 _BaseColor;
                 float _WorldScale;
+                half4 _GroundTint;
+                float _GroundScale;
+                half _GroundSmoothness;
+                half _GroundBlendEnabled;
+                half _VertexTintStrength;
                 half _Smoothness;
                 half _Metallic;
                 half _Cutoff;
@@ -40,13 +52,14 @@ Shader "Harvest/Farm Surface"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
-            struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; UNITY_VERTEX_INPUT_INSTANCE_ID };
+            struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; half4 color : COLOR; UNITY_VERTEX_INPUT_INSTANCE_ID };
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
                 float3 positionWS : TEXCOORD0;
                 half3 normalWS : TEXCOORD1;
                 half fog : TEXCOORD2;
+                half4 groundColor : TEXCOORD3;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -60,6 +73,7 @@ Shader "Harvest/Farm Surface"
                 output.positionCS = TransformWorldToHClip(output.positionWS);
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
                 output.fog = ComputeFogFactor(output.positionCS.z);
+                output.groundColor = input.color;
                 return output;
             }
             half4 Frag(Varyings input) : SV_Target
@@ -77,6 +91,20 @@ Shader "Harvest/Farm Surface"
                 surface.albedo = sampledSurface.rgb * _BaseColor.rgb;
                 surface.metallic = _Metallic;
                 surface.smoothness = _Smoothness * lerp(0.55, 1.15, sampledSurface.a);
+                // Opt-in opaque vertex blend: existing materials retain their original shading.
+                // Red stores soil coverage; green stores a restrained broad brightness variation.
+                if (_GroundBlendEnabled > 0.5)
+                {
+                    float3 g = input.positionWS * _GroundScale;
+                    half4 ground = SAMPLE_TEXTURE2D(_GroundMap, sampler_GroundMap, g.zy) * weights.x;
+                    ground += SAMPLE_TEXTURE2D(_GroundMap, sampler_GroundMap, g.xz) * weights.y;
+                    ground += SAMPLE_TEXTURE2D(_GroundMap, sampler_GroundMap, g.xy) * weights.z;
+                    half blend = saturate(input.groundColor.r);
+                    surface.albedo = lerp(surface.albedo, ground.rgb * _GroundTint.rgb, blend);
+                    surface.smoothness = lerp(surface.smoothness, _GroundSmoothness * lerp(0.55, 1.15, ground.a), blend);
+                }
+                if (_VertexTintStrength > 0.001)
+                    surface.albedo *= lerp(1.0, input.groundColor.g, _VertexTintStrength);
                 surface.normalTS = half3(0,0,1);
                 surface.occlusion = 1;
                 surface.alpha = 1;

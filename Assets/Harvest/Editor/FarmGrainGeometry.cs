@@ -66,6 +66,7 @@ namespace Harvest.Editor
                         int seed=(row*9+column)*4+stalk+(side+1)*701;
                         float height=.94f+Hash(seed+1)*.13f;
                         Vector3 position=new Vector3(x+stalk%2*.35f+(Hash(seed+2)-.5f)*.12f,-.05f,z+stalk/2*.5f+(Hash(seed+3)-.5f)*.12f);
+                        position.y=FarmNaturalGround.SurfaceHeight(position.x,position.z);
                         Matrix4x4 transform=Matrix4x4.TRS(position,Quaternion.Euler((Hash(seed+4)-.5f)*6,Hash(seed+5)*360,side*3),new Vector3(1,height,1));
                         for(int surface=0;surface<2;surface++) parts[surface].Add(new CombineInstance{mesh=plant,subMeshIndex=surface,transform=transform});
                     }

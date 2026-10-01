@@ -20,8 +20,7 @@ namespace Harvest.Editor
             foreach(GameObject prefab in new[]{profile.SupplyPrefab,profile.VegetationPrefab,profile.GroundDebrisPrefab}) Validate(prefab);
             var house=Object.FindFirstObjectByType<FarmhouseFoundation>();if(house==null) return;
             FarmhouseLayout l=house.Layout;var root=new GameObject("Farmyard visual polish").transform;
-            var soil=AssetDatabase.LoadAssetAtPath<Material>("Assets/Harvest/Materials/Soil.mat");
-            if(profile.EnableTracks) Tracks(root,Surface(soil));
+            if(profile.EnableTracks) Tracks(root,Surface(AssetDatabase.LoadAssetAtPath<Material>("Assets/Harvest/Materials/Natural freight gravel.mat")));
             if(profile.EnableBoundaryVegetation) Vegetation(root,l,profile);
             if(profile.EnableYardSupplies)
             {
@@ -48,34 +47,71 @@ namespace Harvest.Editor
             }
             if(profile.GroundDebrisPrefab!=null)
                 foreach(Vector3 position in new[]{new Vector3(-28,-.05f,-18),new Vector3(11,-.05f,-21),new Vector3(28.8f,-.05f,11)})
-                    Instance(profile.GroundDebrisPrefab,root,position,position.z*7);
+                    Instance(profile.GroundDebrisPrefab,root,new Vector3(position.x,Height(position.x,position.z),position.z),position.z*7);
         }
         static void Tracks(Transform root,Material material)
         {
-            var v=new List<Vector3>();var t=new List<int>();
-            foreach(float x in new[]{-2.65f,2.65f})
-                for(int i=0;i<59;i++)
+            var v=new List<Vector3>();var t=new List<int>();var colors=new List<Color>();
+            foreach(float centre in new[]{-2.65f,2.65f})
+            {
+                int first=v.Count;
+                for(int row=0;row<=118;row++)
                 {
-                    float z=-51+i*2f,jitter=Mathf.Sin(i*.37f)*.08f;
-                    Quad(v,t,new Vector3(x+jitter-.14f,.0415f,z),new Vector3(x+jitter-.14f,.0415f,z+1.93f),new Vector3(x+jitter+.14f,.0415f,z+1.93f),new Vector3(x+jitter+.14f,.0415f,z));
+                    float z=-49+row,jitter=(Mathf.PerlinNoise(13,z*.07f)-.5f)*.13f;
+                    float width=.14f+(Mathf.PerlinNoise(39,z*.13f)-.5f)*.035f;
+                    float pressure=.25f+Mathf.PerlinNoise(7,z*.12f)*.55f;
+                    pressure*=Mathf.SmoothStep(0,1,Mathf.InverseLerp(-49,-45,z))*(1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(64,69,z)));
+                    for(int band=0;band<4;band++)
+                    {
+                        float offset=band==0?-width-.065f:band==1?-width:band==2?width:width+.065f;
+                        float x=centre+jitter+offset;v.Add(new Vector3(x,FarmNaturalGround.SurfaceHeight(x,z)+.002f,z));
+                        colors.Add(new Color(band==0||band==3?1:1-pressure,FarmNaturalGround.SurfaceVariation(x,z),0,1));
+                    }
                 }
-            foreach(float z in new[]{-12.65f,-11.35f})
-                for(int i=0;i<18;i++)
+                for(int row=0;row<118;row++)for(int band=0;band<3;band++) TrackCell(t,first+row*4+band,4);
+            }
+            foreach(float centre in new[]{-12.65f,-11.35f})
+            {
+                int first=v.Count;
+                for(int row=0;row<=38;row++)
                 {
-                    float x=-16.7f+i*.51f,jitter=Mathf.Sin(i*.49f)*.04f;
-                    Quad(v,t,new Vector3(x,.0615f,z+jitter-.12f),new Vector3(x,.0615f,z+jitter+.12f),new Vector3(x+.49f,.0615f,z+jitter+.12f),new Vector3(x+.49f,.0615f,z+jitter-.12f));
+                    float x=-16.5f+row*.25f,jitter=(Mathf.PerlinNoise(x*.2f,8)-.5f)*.06f;
+                    float pressure=.5f*Mathf.SmoothStep(0,1,Mathf.InverseLerp(-16.5f,-15.5f,x))*(1-Mathf.SmoothStep(0,1,Mathf.InverseLerp(-8,-7,x)));
+                    for(int band=0;band<4;band++)
+                    {
+                        float offset=band==0?-.19f:band==1?-.12f:band==2?.12f:.19f;
+                        float z=centre+jitter+offset;v.Add(new Vector3(x,FarmNaturalGround.SurfaceHeight(x,z)+.002f,z));
+                        colors.Add(new Color(band==0||band==3?1:1-pressure,FarmNaturalGround.SurfaceVariation(x,z),0,1));
+                    }
                 }
-            Save(root,"Road and access tyre wear",v,t,material);
+                for(int row=0;row<38;row++)for(int band=0;band<3;band++) TrackCell(t,first+row*4+band,4,true);
+            }
+            Save(root,"Road and access tyre wear",v,t,material,colors);
+        }
+        static void TrackCell(List<int> t,int a,int columns,bool flip=false)
+        {
+            t.Add(a);t.Add(a+(flip?1:columns));t.Add(a+(flip?columns:1));
+            t.Add(a+1);t.Add(a+(flip?columns+1:columns));t.Add(a+(flip?columns:columns+1));
         }
         static void Vegetation(Transform root,FarmhouseLayout l,FarmyardArtProfile profile)
         {
             var points=new List<Vector3>();
-            foreach(int side in new[]{-1,1}) for(int i=0;i<34;i++)
+            foreach(int side in new[]{-1,1}) for(int i=0;i<46;i++)
             {
-                float z=-49+i*3.4f,x=side*(9.92f+(i%3)*.19f);
-                if(Clear(x,z,l)) points.Add(new Vector3(x,-.05f,z));
-                x=side*(29.25f+(i%3)*.12f);
-                if(Clear(x,z,l)) points.Add(new Vector3(x,-.05f,z+.9f));
+                float patch=Mathf.PerlinNoise(i*.27f+side*13+40,71);
+                if(patch<.32f)continue;
+                float z=-49+i*2.5f+(Mathf.PerlinNoise(i*.71f+12,8)-.5f)*1.35f;
+                foreach(float edge in new[]{10.35f,29.05f})
+                {
+                    float x=side*(edge+Mathf.PerlinNoise(i*.41f+21,edge)*.55f);
+                    int clumps=patch>.64f?3:1;
+                    for(int clump=0;clump<clumps;clump++)
+                    {
+                        float angle=(i*137.5f+clump*120)*Mathf.Deg2Rad;
+                        float px=x+Mathf.Cos(angle)*clump*.13f,pz=z+Mathf.Sin(angle)*clump*.13f;
+                        if(Clear(px,pz,l))points.Add(new Vector3(px,FarmNaturalGround.SurfaceHeight(px,pz),pz));
+                    }
+                }
             }
             if(profile.VegetationPrefab!=null)
             {for(int i=0;i<points.Count;i++) Instance(profile.VegetationPrefab,root,points[i],i*137.5f);return;}
@@ -85,7 +121,8 @@ namespace Harvest.Editor
             {
                 float angle=(i*137.5f+blade*72)*Mathf.Deg2Rad,height=.24f+(i+blade)%5*.036f;
                 Vector3 direction=new Vector3(Mathf.Cos(angle),0,Mathf.Sin(angle)),across=Vector3.Cross(Vector3.up,direction)*.016f;
-                Vector3 bottom=points[i]+direction*.04f,middle=bottom+Vector3.up*(height*.58f)+direction*.065f,tip=bottom+Vector3.up*height+direction*.11f;
+                Vector3 bottom=points[i]+direction*.04f;bottom.y=FarmNaturalGround.SurfaceHeight(bottom.x,bottom.z);
+                Vector3 middle=bottom+Vector3.up*(height*.58f)+direction*.065f,tip=bottom+Vector3.up*height+direction*.11f;
                 Triangle(v,t,bottom,middle-across,tip);Triangle(v,t,bottom,tip,middle+across);
                 Triangle(v,t,bottom,tip,middle-across);Triangle(v,t,bottom,middle+across,tip);
             }
@@ -98,11 +135,16 @@ namespace Harvest.Editor
             if(x>-17.4f && x<-6.6f && z>-14.4f && z<-9.6f) return false;
             return true;
         }
-        static float Height(float x,float z) => x>=-17 && x<=-7 && z>=-14 && z<=-10?.06f:-.05f;
-        static Material Surface(Material soil)
+        static float Height(float x,float z) => FarmNaturalGround.SurfaceHeight(x,z);
+        static Material Surface(Material road)
         {
-            const string path="Assets/Harvest/Materials/Farm Tyre Wear.mat";Material material=AssetDatabase.LoadAssetAtPath<Material>(path);if(material!=null) return material;
-            material=new Material(soil){name="Farm Tyre Wear"};Color tint=soil.GetColor("_BaseColor");material.SetColor("_BaseColor",new Color(tint.r*.87f,tint.g*.87f,tint.b*.87f,tint.a));AssetDatabase.CreateAsset(material,path);return material;
+            const string path="Assets/Harvest/Materials/Farm Natural Tyre Wear.mat";
+            Material material=AssetDatabase.LoadAssetAtPath<Material>(path);if(material!=null)return material;
+            material=new Material(road){name="Farm Natural Tyre Wear"};
+            Color tint=road.GetColor("_BaseColor");material.SetColor("_BaseColor",new Color(tint.r*.86f,tint.g*.86f,tint.b*.86f,tint.a));
+            material.SetTexture("_GroundMap",road.GetTexture("_SurfaceMap"));material.SetColor("_GroundTint",tint);
+            material.SetFloat("_GroundScale",road.GetFloat("_WorldScale"));material.SetFloat("_GroundSmoothness",road.GetFloat("_Smoothness"));
+            AssetDatabase.CreateAsset(material,path);return material;
         }
         static void Validate(GameObject prefab)
         {
@@ -124,10 +166,10 @@ namespace Harvest.Editor
         {Triangle(v,t,a,b,c);Triangle(v,t,a,c,d);}
         static void Triangle(List<Vector3> v,List<int> t,Vector3 a,Vector3 b,Vector3 c)
         {int n=v.Count;v.Add(a);v.Add(b);v.Add(c);t.Add(n);t.Add(n+1);t.Add(n+2);}
-        static void Save(Transform root,string name,List<Vector3> v,List<int> t,Material material)
+        static void Save(Transform root,string name,List<Vector3> v,List<int> t,Material material,List<Color> colors=null)
         {
             string path=Folder+"/"+name.Replace(" ","_")+".asset";Mesh mesh=AssetDatabase.LoadAssetAtPath<Mesh>(path);bool create=mesh==null;if(create) mesh=new Mesh();
-            mesh.Clear();mesh.name=name;mesh.SetVertices(v);mesh.SetTriangles(t,0);var uv=new List<Vector2>();foreach(Vector3 p in v) uv.Add(new Vector2(p.x,p.z));mesh.SetUVs(0,uv);
+            mesh.Clear();mesh.name=name;mesh.SetVertices(v);mesh.SetTriangles(t,0);if(colors!=null)mesh.SetColors(colors);var uv=new List<Vector2>();foreach(Vector3 p in v) uv.Add(new Vector2(p.x,p.z));mesh.SetUVs(0,uv);
             mesh.RecalculateNormals();mesh.RecalculateBounds();mesh.RecalculateTangents();if(create) AssetDatabase.CreateAsset(mesh,path);EditorUtility.SetDirty(mesh);
             var go=new GameObject(name);go.transform.SetParent(root,false);go.AddComponent<MeshFilter>().sharedMesh=mesh;go.AddComponent<MeshRenderer>().sharedMaterial=material;
             go.GetComponent<MeshRenderer>().shadowCastingMode=ShadowCastingMode.Off;GameObjectUtility.SetStaticEditorFlags(go,StaticEditorFlags.BatchingStatic);
