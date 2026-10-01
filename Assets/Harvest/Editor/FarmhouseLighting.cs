@@ -29,9 +29,19 @@ namespace Harvest.Editor
             }
             Material bulb=BulbMaterial();
             Pendant(root,"Ground practical",new Vector3(2.4f,l.UpperFloorTop-.18f,2.3f),steel,bulb,look.GroundPracticalIntensity,look);
-            Pendant(root,"Upper practical",new Vector3(2.8f,l.EavesHeight-.14f,-3.2f),steel,bulb,look.UpperPracticalIntensity,look);
+            Pendant(root,"Upper practical",new Vector3(1.7f,l.EavesHeight-.14f,-3.2f),steel,bulb,look.UpperPracticalIntensity,look);
             Pendant(root,"Ground entry practical",new Vector3(1.8f,l.UpperFloorTop-.18f,-3.6f),steel,bulb,look.GroundPracticalIntensity,look);
-            Pendant(root,"Upper rear practical",new Vector3(1.8f,l.EavesHeight-.14f,3.4f),steel,bulb,look.UpperPracticalIntensity,look);
+            Pendant(root,"Upper rear practical",new Vector3(1.8f,l.EavesHeight-.14f,CeilingClearZ(3.4f,l)),steel,bulb,look.UpperPracticalIntensity,look);
+            foreach(FarmhouseRoom room in FarmhouseRoomPlan.Create(l))
+            {
+                bool ground=room.Kind==FarmhouseRoomKind.Utility;
+                float ceiling=ground?l.UpperFloorTop-.18f:l.EavesHeight-.14f;
+                Pendant(root,room.Name+" practical",new Vector3(room.Center.x,ceiling,ground?room.Center.z:CeilingClearZ(room.Center.z,l)),steel,bulb,
+                    (ground?look.GroundPracticalIntensity:look.UpperPracticalIntensity)*.65f,look);
+                float height=ceiling-room.Floor;
+                Reflection(root,room.Name+" reflection",room.Center+Vector3.up*(height*.5f),
+                    new Vector3(room.Right-room.Left-.16f,height-.16f,room.Rear-room.Front-.16f),128,20,20);
+            }
             Sconce(root,steel,bulb,l,look);
             WindowBounce(root,l,look);
             Reflection(root,"Ground room reflection",new Vector3(0,(l.GroundFloorTop+l.UpperFloorTop-.18f)*.5f,0),
@@ -41,6 +51,12 @@ namespace Harvest.Editor
             Reflection(root,"Farmyard reflection",new Vector3(4,3,-1),new Vector3(45,18,42),128,0,150);
             Probes(root,l);
             Pipeline(look);
+        }
+        static float CeilingClearZ(float z,FarmhouseLayout l)
+        {
+            foreach(float beam in new[]{-l.HalfDepth+2.25f,0f,l.HalfDepth-2.9f})
+                if(Mathf.Abs(z-beam)<.45f) z=beam+(z<beam?-.45f:.45f);
+            return z;
         }
         static void Pendant(Transform root,string name,Vector3 anchor,Material steel,Material bulb,float intensity,HarvestVisualProfile look)
         {

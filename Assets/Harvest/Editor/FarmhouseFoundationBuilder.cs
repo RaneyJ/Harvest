@@ -64,7 +64,9 @@ namespace Harvest.Editor
                 FarmhousePlasterFinish.ApplyInstalled();
                 a.TrimTimber=FarmhouseTimberFinish.Material("Trim",a.Timber,.22f);
                 a.StairTimber=FarmhouseTimberFinish.Material("Stairs",a.Timber,.18f);
-                Shell(a); FloorsAndStairs(a); Roof(a); Porch(a); Interior(a); Utilities(a);
+                Shell(a); FloorsAndStairs(a); Roof(a); Porch(a);
+                FarmhouseRooms.Build(a.Interior,a.Collision,layout,a.Plaster,a.TrimTimber,a.Steel);
+                Interior(a); Utilities(a);
                 FarmhouseJoinery.Ceilings(a.Interior,a.Plaster,layout,FloorThickness);
                 AssetDatabase.SaveAssets();
                 GameObject prefab = PrefabUtility.SaveAsPrefabAsset(a.Root, GeneratedPath);
@@ -192,9 +194,6 @@ namespace Harvest.Editor
                 Part(a, a.Interior, "Stairwell post " + i, a.Steel,
                     new Vector3(railX, l.UpperFloorTop + 0.5f, Mathf.Lerp(l.StairStart, l.StairEnd, i / (float)posts)),
                     new Vector3(0.075f, 1f, 0.075f), 0.008f, true);
-            Beam(a, a.Interior, "Stair wall handrail", a.Steel,
-                new Vector3(l.StairX - l.StairWidth * 0.5f - 0.18f, l.TreadTop(0) + 0.85f, l.StairStart),
-                new Vector3(l.StairX - l.StairWidth * 0.5f - 0.18f, l.UpperFloorTop + 0.85f, l.StairEnd), 0.065f);
             Part(a, a.Interior, "Upper ceiling", a.Timber, new Vector3(0f, l.EavesHeight - 0.06f, 0f),
                 new Vector3(l.HalfWidth * 2f, 0.12f, l.HalfDepth * 2f), 0.008f, true);
             for (int i = -1; i <= 1; i++)
@@ -265,7 +264,7 @@ namespace Harvest.Editor
             // Cover beside the opening, with a clear central firing lane and approach route.
             foreach (int side in new[] { -1, 1 })
                 Part(a, a.Interior, "Upstairs agricultural crate " + side, a.Timber,
-                    new Vector3(l.HalfWidth - 0.8f, l.UpperFloorTop + 0.45f, 1f + side * 3f),
+                    new Vector3(l.HalfWidth - 0.8f, l.UpperFloorTop + 0.45f, side<0?-1.7f:4f),
                     new Vector3(1.1f, 0.9f, 1.1f), 0.025f, true);
         }
         static void Utilities(Assembly a)

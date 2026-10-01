@@ -55,7 +55,7 @@ namespace Harvest.Editor
                     new Vector3(l.HalfWidth+2f,l.UpperFloorTop+1.6f,1f));
                 CheckSightline(house, new Vector3(1f,l.UpperFloorTop+1.6f,-l.HalfDepth+0.9f),
                     new Vector3(1f,l.UpperFloorTop+1.6f,-l.HalfDepth-2f));
-                if (l.AuthoredPrefab == null) CheckDressingAccess(house);
+                if (l.AuthoredPrefab == null) {CheckDressingAccess(house);CheckRooms(house);}
                 if (Application.isPlaying) CheckNavigation(house);
                 Debug.Log("Farmhouse foundation checks passed: mesh geometry/UVs, generated wall coverage/UV continuity, hierarchy groups, collision separation, 1.9m body clearance, stairs and firing windows" +
                     (Application.isPlaying ? ", and downstairs-to-upstairs marine navigation." : ", persistent mesh assets and prefab connection. Run again in Play mode to also check marine navigation."));
@@ -183,10 +183,26 @@ namespace Harvest.Editor
                 CheckBody(house,new Vector3(x,l.UpperFloorTop,1f),0f);
             foreach(Vector3 point in new[] {
                 new Vector3(-3.6f,l.GroundFloorTop,l.HalfDepth-1.5f),
-                new Vector3(2.7f,l.GroundFloorTop,1.7f),
+                new Vector3(2.7f,l.GroundFloorTop,l.HalfDepth-6.35f),
                 new Vector3(-l.HalfWidth+2.9f,l.UpperFloorTop,l.HalfDepth-1.4f),
-                new Vector3(l.HalfWidth-2.3f,l.UpperFloorTop,-l.HalfDepth+2.25f) })
+                new Vector3(l.HalfWidth-2.15f,l.UpperFloorTop,-l.HalfDepth+2.25f) })
                 CheckBody(house,point,0f);
+        }
+        static void CheckRooms(FarmhouseFoundation house)
+        {
+            FarmhouseLayout l=house.Layout;
+            Require(house.transform.Find("Interior/Rooms")!=null,"Missing room assembly. Rebuild scene 34.");
+            foreach(FarmhouseRoom room in FarmhouseRoomPlan.Create(l))
+            {
+                Require(house.transform.Find("Interior/Rooms/"+room.Name)!=null,"Missing room: "+room.Name);
+                Require(room.Right-room.Left>2f && room.Rear-room.Front>2f && room.DoorWidth>=1.5f,"Room dimensions or doorway are too narrow: "+room.Name);
+                float start=room.DoorAlongZ?room.Front:room.Left,end=room.DoorAlongZ?room.Rear:room.Right;
+                Require(room.DoorRun-room.DoorWidth*.5f>start+.10f && room.DoorRun+room.DoorWidth*.5f<end-.10f,"Door casing does not fit its partition: "+room.Name);
+                CheckBody(house,room.Entry-room.Inward*.65f,0f);
+                CheckBody(house,room.Entry,0f);
+                CheckBody(house,room.Entry+room.Inward*.65f,0f);
+                CheckSightline(house,room.Entry-room.Inward*.65f+Vector3.up*1.6f,room.Entry+room.Inward*.65f+Vector3.up*1.6f);
+            }
         }
         static void CheckNavigation(FarmhouseFoundation house)
         {
@@ -198,6 +214,12 @@ namespace Harvest.Editor
             var path = new NavMeshPath();
             Require(NavMesh.CalculatePath(start.position, end.position, NavMesh.AllAreas, path) && path.status == NavMeshPathStatus.PathComplete,
                 "Marine cannot reach the upstairs window from the entrance.");
+            if(l.AuthoredPrefab==null) foreach(FarmhouseRoom room in FarmhouseRoomPlan.Create(l))
+            {
+                Vector3 target=house.transform.TransformPoint(room.Entry+room.Inward*.65f);
+                Require(NavMesh.SamplePosition(target,out NavMeshHit roomHit,.35f,NavMesh.AllAreas),"Marine navigation is missing inside "+room.Name);
+                Require(NavMesh.CalculatePath(start.position,roomHit.position,NavMesh.AllAreas,path) && path.status==NavMeshPathStatus.PathComplete,"Marine cannot enter "+room.Name);
+            }
         }
         static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
         static void Require(bool condition, string message) { if (!condition) throw new Exception(message); }

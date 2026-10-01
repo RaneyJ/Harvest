@@ -20,6 +20,11 @@ namespace Harvest
         public FarmhouseDressingCluster Dining = new FarmhouseDressingCluster();
         public FarmhouseDressingCluster FarmStorage = new FarmhouseDressingCluster();
         public FarmhouseDressingCluster Sleeping = new FarmhouseDressingCluster();
+        public FarmhouseDressingCluster UtilityRoom = new FarmhouseDressingCluster();
+        public FarmhouseDressingCluster EntryDetails = new FarmhouseDressingCluster();
+        public FarmhouseDressingCluster BedroomDetails = new FarmhouseDressingCluster();
+        public FarmhouseDressingCluster OfficeDetails = new FarmhouseDressingCluster();
+        public FarmhouseDressingCluster FiringPosition = new FarmhouseDressingCluster();
         public FarmhouseDressingCluster WorkDesk = new FarmhouseDressingCluster();
     }
 }

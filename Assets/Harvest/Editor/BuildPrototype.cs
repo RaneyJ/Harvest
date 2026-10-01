@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "33";
+        const string SceneVersion = "34";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the farmhouse surface and grain pass. Rebuild The Line for aligned timber finishes, finer grain plants, softer ground contacts and improved room lighting. Save manual edits first. Bake lighting and reflections after rebuilding.",
+                    "This scene predates the concept-led farmhouse rooms. Rebuild The Line for a utility pantry, sleeping room, farm office, framed transitions and new interior details. Save manual edits first. Bake lighting and reflections after rebuilding.",
                     "Rebuild scene", "Later"))
                     Build();
             };

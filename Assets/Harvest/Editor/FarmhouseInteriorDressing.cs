@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         public const string LayoutPath = "Assets/Harvest/Data/Farmhouse Dressing Layout.asset";
         const string PrefabFolder = "Assets/Harvest/Prefabs/Environment/FarmhouseProps";
-        sealed class Palette { public Material Wood, Steel, Stone, Paint, Cloth, Linen, Ceramic, Rubber, Paper, Screen; }
+        internal sealed class Palette { public Material Wood, Steel, Stone, Paint, Cloth, Linen, Ceramic, Rubber, Paper, Screen; }
         public static void Build(Transform interior, Transform collision, FarmhouseLayout house, Material wood, Material steel, Material stone)
         {
             FarmhouseMeshLibrary.EnsureFolder(PrefabFolder);
@@ -29,10 +29,20 @@ namespace Harvest.Editor
                 Screen=Material("Terminal screen",new Color(.07f,.15f,.13f),.05f,.3f) };
             var dressing = new GameObject("Dressing"); dressing.transform.SetParent(interior,false);
             Add("Kitchen",settings.Kitchen,new Vector3(-3.6f,house.GroundFloorTop,house.HalfDepth-.5f),0f,dressing.transform,collision,p,Kitchen);
-            Add("Dining",settings.Dining,new Vector3(2.7f,house.GroundFloorTop,3.5f),0f,dressing.transform,collision,p,Dining);
+            Add("Dining",settings.Dining,new Vector3(2.7f,house.GroundFloorTop,house.HalfDepth-4.8f),0f,dressing.transform,collision,p,Dining);
             Add("Farm storage",settings.FarmStorage,new Vector3(house.HalfWidth-.65f,house.GroundFloorTop,-house.HalfDepth+2f),90f,dressing.transform,collision,p,Storage);
             Add("Sleeping",settings.Sleeping,new Vector3(-house.HalfWidth+1f,house.UpperFloorTop,house.HalfDepth-1.4f),0f,dressing.transform,collision,p,Sleeping);
-            Add("Work desk",settings.WorkDesk,new Vector3(house.HalfWidth-2.3f,house.UpperFloorTop,-house.HalfDepth+1.2f),180f,dressing.transform,collision,p,Desk);
+            Add("Work desk",settings.WorkDesk,new Vector3(house.HalfWidth-1.6f,house.UpperFloorTop,-house.HalfDepth+1.2f),180f,dressing.transform,collision,p,Desk);
+            Add("Entry details",settings.EntryDetails,new Vector3(house.HalfWidth-house.WallThickness*.5f,house.GroundFloorTop,-house.HalfDepth+3.9f),90f,dressing.transform,collision,p,FarmhouseConceptDetails.Entry);
+            Add("Firing supplies",settings.FiringPosition,new Vector3(house.HalfWidth-1.1f,house.UpperFloorTop,2.4f),90f,dressing.transform,collision,p,FarmhouseConceptDetails.Firing);
+            Add("Office details",settings.OfficeDetails,new Vector3(house.HalfWidth-1.75f,house.UpperFloorTop,-house.HalfDepth+2.7f),0f,dressing.transform,collision,p,FarmhouseConceptDetails.Office);
+            foreach(FarmhouseRoom room in FarmhouseRoomPlan.Create(house))
+            {
+                if(room.Kind==FarmhouseRoomKind.Utility)
+                    Add("Pantry contents",settings.UtilityRoom,new Vector3(room.Center.x,room.Floor,house.HalfDepth-.35f),0f,dressing.transform,collision,p,FarmhouseConceptDetails.Pantry);
+                if(room.Kind==FarmhouseRoomKind.Bedroom)
+                    Add("Bedroom details",settings.BedroomDetails,new Vector3(room.Right-.65f,room.Floor,house.HalfDepth-.6f),0f,dressing.transform,collision,p,FarmhouseConceptDetails.Bedroom);
+            }
         }
         static void Add(string name,FarmhouseDressingCluster settings,Vector3 anchor,float yaw,Transform parent,Transform collision,Palette p,Action<Transform,Palette> model)
         {
@@ -81,7 +91,7 @@ namespace Harvest.Editor
             material.SetFloat("_Metallic",metallic); material.SetFloat("_Smoothness",smoothness);
             AssetDatabase.CreateAsset(material,path); return material;
         }
-        static GameObject Box(Transform root,string name,Material material,Vector3 center,Vector3 size,bool solid=false,float bevel=.006f)
+        internal static GameObject Box(Transform root,string name,Material material,Vector3 center,Vector3 size,bool solid=false,float bevel=.006f)
         {
             var go=new GameObject(name); go.transform.SetParent(root,false); go.transform.localPosition=center;
             go.AddComponent<MeshFilter>().sharedMesh=FarmhouseTimberFinish.IsTimber(material)?FarmhouseTimberFinish.Box(size,bevel):FarmhouseMeshLibrary.Box(size,bevel);
@@ -95,7 +105,7 @@ namespace Harvest.Editor
             }
             return go;
         }
-        static void Vessel(Transform root,string name,Material material,Vector3 position,float radius,float height)
+        internal static void Vessel(Transform root,string name,Material material,Vector3 position,float radius,float height)
         {
             var go=new GameObject(name);go.transform.SetParent(root,false);go.transform.localPosition=position;
             go.AddComponent<MeshFilter>().sharedMesh=FarmhousePropMeshes.Vessel(name,radius,height,.012f);
@@ -133,6 +143,7 @@ namespace Harvest.Editor
             Vessel(root,"Cooking pot",p.Steel,new Vector3(-.95f,1.02f,.05f),.16f,.19f);
             Mug(root,p,new Vector3(-.46f,1.02f,-.14f));
             Box(root,"Cutting board",p.Wood,new Vector3(1.12f,1.035f,-.07f),new Vector3(.44f,.025f,.30f));
+            FarmhouseConceptDetails.KitchenUtilities(root,p);
         }
         static void Dining(Transform root,Palette p)
         {
