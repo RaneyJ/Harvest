@@ -147,7 +147,7 @@ namespace Harvest.Editor
             Mug(root,p,new Vector3(-.58f,.83f,-.26f));
             Vessel(root,"Enamel bowl",p.Ceramic,new Vector3(.12f,.83f,.10f),.13f,.07f);
             Box(root,"Folded cloth",p.Cloth,new Vector3(.72f,.85f,.18f),new Vector3(.33f,.04f,.23f));
-            Book(root,p,new Vector3(.40f,.84f,-.28f));
+            Book(root,p,new Vector3(.40f,.83f,-.28f));
         }
         static void Storage(Transform root,Palette p)
         {
@@ -160,7 +160,7 @@ namespace Harvest.Editor
                 for(int k=0;k<2;k++)
                 {
                     float x=-.43f+k*.86f;
-                    Box(root,"Seed bin "+i+" "+k,p.Paint,new Vector3(x,y+.22f,0),new Vector3(.69f,.37f,.46f));
+                    Box(root,"Seed bin "+i+" "+k,p.Paint,new Vector3(x,y+.215f,0),new Vector3(.69f,.37f,.46f));
                     Box(root,"Seed label "+i+" "+k,p.Paper,new Vector3(x,y+.25f,-.238f),new Vector3(.20f,.085f,.012f));
                     Box(root,"Bin handle "+i+" "+k,p.Steel,new Vector3(x,y+.12f,-.25f),new Vector3(.19f,.025f,.022f));
                 }
@@ -168,9 +168,10 @@ namespace Harvest.Editor
             // One coarse collision envelope catches grenades/bullets without six tiny bin colliders.
             var envelope=new GameObject("Rack contents collision");envelope.transform.SetParent(root,false);
             envelope.AddComponent<BoxCollider>().center=new Vector3(0,1f,0);envelope.GetComponent<BoxCollider>().size=new Vector3(1.72f,1.96f,.62f);
-            Box(root,"Irrigation controller",p.Paint,new Vector3(0,2.20f,.05f),new Vector3(.60f,.30f,.22f));
-            Box(root,"Controller dial",p.Ceramic,new Vector3(-.18f,2.21f,-.07f),new Vector3(.10f,.10f,.025f));
-            Box(root,"Controller display",p.Screen,new Vector3(.12f,2.23f,-.07f),new Vector3(.22f,.12f,.015f));
+            Box(root,"Controller support shelf",p.Wood,new Vector3(0,1.99f,0),new Vector3(1.7f,.06f,.60f),true);
+            Box(root,"Irrigation controller",p.Paint,new Vector3(0,2.17f,.05f),new Vector3(.60f,.30f,.22f),true);
+            Box(root,"Controller dial",p.Ceramic,new Vector3(-.18f,2.18f,-.07f),new Vector3(.10f,.10f,.025f));
+            Box(root,"Controller display",p.Screen,new Vector3(.12f,2.20f,-.07f),new Vector3(.22f,.12f,.015f));
         }
         static void Sleeping(Transform root,Palette p)
         {
@@ -183,7 +184,7 @@ namespace Harvest.Editor
             Box(root,"Personal chest",p.Wood,new Vector3(1.02f,.26f,.55f),new Vector3(.62f,.52f,.62f),true,.015f);
             Box(root,"Chest lid",p.Wood,new Vector3(1.02f,.535f,.55f),new Vector3(.65f,.04f,.65f));
             Box(root,"Chest latch",p.Steel,new Vector3(1.02f,.46f,.22f),new Vector3(.06f,.10f,.035f));
-            Book(root,p,new Vector3(1.04f,.575f,.48f));
+            Book(root,p,new Vector3(1.04f,.555f,.48f));
             for(int i=0;i<2;i++)
             {
                 Box(root,"Work boot toe "+i,p.Rubber,new Vector3(.81f+i*.23f,.08f,-.44f),new Vector3(.16f,.16f,.31f),false,.02f);
@@ -200,7 +201,7 @@ namespace Harvest.Editor
             Box(root,"Terminal glass",p.Screen,new Vector3(.32f,1.11f,.095f),new Vector3(.45f,.29f,.02f));
             for(int i=0;i<3;i++) Box(root,"Terminal field rows "+i,p.Cloth,new Vector3(.29f,1.19f-i*.07f,.082f),new Vector3(.30f-i*.05f,.013f,.007f));
             Box(root,"Keyboard",p.Rubber,new Vector3(.32f,.82f,-.16f),new Vector3(.47f,.025f,.16f));
-            Book(root,p,new Vector3(-.42f,.83f,-.03f));
+            Notepad(root,p,new Vector3(-.42f,.805f,-.03f));
             // Framed field plan: a few inset plot boundaries establish agricultural context.
             Box(root,"Field plan frame",p.Wood,new Vector3(-.47f,1.04f,.24f),new Vector3(.33f,.35f,.04f));
             Box(root,"Field plan paper",p.Paper,new Vector3(-.47f,1.04f,.214f),new Vector3(.28f,.30f,.012f));
@@ -213,8 +214,18 @@ namespace Harvest.Editor
             Box(root,"Mug handle side",p.Ceramic,position+new Vector3(.109f,.064f,0),new Vector3(.016f,.075f,.018f));
             Box(root,"Mug handle bottom",p.Ceramic,position+new Vector3(.082f,.032f,0),new Vector3(.055f,.016f,.018f));
         }
+        static void Notepad(Transform root,Palette p,Vector3 surface)
+        {
+            var pad=new GameObject("Desk notepad");pad.transform.SetParent(root,false);pad.transform.localPosition=surface;
+            // Local -Z is the working side of the desk; the binding sits at the far (+Z) edge.
+            Box(pad.transform,"Pad backing",p.Cloth,new Vector3(0,.002f,0),new Vector3(.23f,.004f,.31f));
+            Box(pad.transform,"Writing paper",p.Paper,new Vector3(0,.017f,0),new Vector3(.21f,.026f,.29f));
+            Box(pad.transform,"Top binding",p.Cloth,new Vector3(0,.03f,.136f),new Vector3(.23f,.016f,.022f));
+        }
+        // Position is the supporting surface, rather than an approximate object center.
         static void Book(Transform root,Palette p,Vector3 position)
         {
+            position += Vector3.up * .0265f;
             Box(root,"Notebook pages",p.Paper,position,new Vector3(.21f,.035f,.29f));
             for(int sign=-1;sign<=1;sign+=2) Box(root,"Notebook cover "+sign,p.Cloth,position+Vector3.up*(sign*.022f),new Vector3(.23f,.009f,.31f));
             Box(root,"Notebook spine",p.Cloth,position+Vector3.left*.112f,new Vector3(.014f,.047f,.31f));

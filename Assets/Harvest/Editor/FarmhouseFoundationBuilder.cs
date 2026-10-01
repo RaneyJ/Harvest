@@ -198,13 +198,7 @@ namespace Harvest.Editor
         static void Floor(Assembly a, string name, Vector3 center, Vector3 size)
         {
             Solid(a, name, center, size, true);
-            // Floorboards use shared dimensioned meshes and preserve a perfectly flat collision surface.
-            int boards = Mathf.CeilToInt(size.x / 0.42f);
-            float width = size.x / boards;
-            for (int i = 0; i < boards; i++)
-                Part(a, a.Interior, name + " board " + i, a.Timber,
-                    center + Vector3.right * (-size.x * 0.5f + (i + 0.5f) * width),
-                    new Vector3(width - 0.008f, size.y, size.z), 0.003f);
+            FarmhouseFloorboards.Build(a.Interior,name,center,size,a.Timber);
         }
         static void Roof(Assembly a)
         {
