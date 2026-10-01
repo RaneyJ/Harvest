@@ -60,6 +60,7 @@ namespace Harvest.Editor
                 a.Steel = Material("Steel", new Color(0.18f, 0.20f, 0.20f), 0.7f, 0.30f);
                 a.Roofing = Material("Roofing", new Color(0.33f, 0.35f, 0.34f), 0.55f, 0.25f);
                 a.Stone = Material("Foundation", new Color(0.40f, 0.41f, 0.37f), 0f, 0.10f);
+                FarmhouseMaterialLibrary.ApplyInstalled();
                 Shell(a); FloorsAndStairs(a); Roof(a); Porch(a); Interior(a); Utilities(a);
                 AssetDatabase.SaveAssets();
                 GameObject prefab = PrefabUtility.SaveAsPrefabAsset(a.Root, GeneratedPath);
@@ -215,7 +216,7 @@ namespace Harvest.Editor
             foreach (int side in new[] { -1, 1 })
             {
                 GameObject roof = Part(a, a.Roof, "Roof slope " + side, a.Roofing,
-                    new Vector3(side * span * 0.5f, centerY, 0f), new Vector3(slopeLength, 0.2f, depth), 0.008f, true);
+                    new Vector3(side * span * 0.5f, centerY, 0f), new Vector3(slopeLength, 0.2f, depth), 0.008f, true, true);
                 roof.transform.localRotation = Quaternion.Euler(0f, 0f, -side * l.RoofPitch);
                 Transform collision = a.Collision.Find("Roof slope " + side);
                 collision.localRotation = roof.transform.localRotation;
@@ -302,9 +303,9 @@ namespace Harvest.Editor
             AssetDatabase.CreateAsset(material, path); return material;
         }
         static GameObject Part(Assembly a, Transform group, string name, Material material, Vector3 position,
-            Vector3 size, float bevel = 0.015f, bool solid = false)
+            Vector3 size, float bevel = 0.015f, bool solid = false, bool rotateUV = false)
         {
-            GameObject visual = Visual(group, name, FarmhouseMeshLibrary.Box(size, bevel), material, position);
+            GameObject visual = Visual(group, name, FarmhouseMeshLibrary.Box(size, bevel, rotateUV), material, position);
             if (solid) Solid(a, name, position, size);
             return visual;
         }

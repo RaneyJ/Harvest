@@ -24,11 +24,11 @@ namespace Harvest.Editor
             }
         }
         static string Number(float value) => value.ToString("F4", CultureInfo.InvariantCulture);
-        public static Mesh Box(Vector3 size, float bevel = 0.015f)
+        public static Mesh Box(Vector3 size, float bevel = 0.015f, bool rotateUV = false)
         {
             Vector3 h = size * 0.5f;
             bevel = Mathf.Clamp(bevel, 0.0001f, Mathf.Min(h.x, Mathf.Min(h.y, h.z)) * 0.45f);
-            string key = "Box_" + Number(size.x) + "_" + Number(size.y) + "_" + Number(size.z) + "_" + Number(bevel);
+            string key = "Box_" + Number(size.x) + "_" + Number(size.y) + "_" + Number(size.z) + "_" + Number(bevel) + (rotateUV ? "_RotatedUV" : "");
             if (Cache.TryGetValue(key, out Mesh cached)) return cached;
             Vector3 inner = h - Vector3.one * bevel;
             var data = new Geometry();
@@ -66,6 +66,8 @@ namespace Harvest.Editor
                         data.Face(new Vector3(x, y, z).normalized,
                             p + Vector3.right * (x * bevel), p + Vector3.up * (y * bevel), p + Vector3.forward * (z * bevel));
                     }
+            if (rotateUV)
+                for (int i = 0; i < data.UV.Count; i++) data.UV[i] = new Vector2(-data.UV[i].y, data.UV[i].x);
             return Save(key, data);
         }
         public static Mesh Gable(float width, float height, float thickness)

@@ -28,15 +28,15 @@ The farmhouse keeps the original footprint, floor spacing and road-facing firing
 
 - `Assets/Harvest/Data/Farmhouse Layout.asset`: persistent dimensions, position and optional `AuthoredPrefab`. Changing dimensions requires a rebuild; the builder rejects unsafe stair/landing configurations.
 - `Assets/Harvest/Prefabs/Environment/Farmhouse Generated.prefab`: generated assembly. Rebuilds overwrite this path. Save authored changes as a prefab variant or independent prefab at another path and assign `AuthoredPrefab` to protect them. Rebuilds instantiate the assigned asset without rewriting it.
-- `Assets/Harvest/Art/Generated/Farmhouse`: dimensioned shared mesh assets. Generation supplies bevels, explicit face normals, metre-scale UV0, separately packed lightmap UV2 and tangents. Render objects use unit scale. Generated meshes remain shared by variants, so replace a mesh with an artist-owned asset before editing its geometry.
-- `Assets/Harvest/Materials/Farmhouse Foundation *.mat`: persistent stock URP Lit base materials. Existing edits survive generation. They support later normal/PBR texture maps and lightmapping; no texture quality or completed lighting bake is implied.
+- `Assets/Harvest/Art/Generated/Farmhouse`: dimensioned shared mesh assets. Generation supplies bevels, explicit face normals, metre-scale UV0, separately packed lightmap UV2 and tangents. The main roof slopes rotate UV0 so corrugations run down the pitch. Render objects use unit scale. Generated meshes remain shared by variants, so replace a mesh with an artist-owned asset before editing its geometry.
+- `Assets/Harvest/Materials/Farmhouse Foundation *.mat`: persistent stock URP Lit base materials. Existing edits survive generation. The PBR installer assigns scanned maps only while these materials have no authored maps. Existing maps and edited tint, smoothness, normal strength, occlusion strength and UV transforms survive rebuilds. See [MATERIAL_SOURCES.md](MATERIAL_SOURCES.md) for sources and review steps. Final lighting is still pending.
 - Hierarchy groups: `Shell`, `Roof`, `Porch`, `Interior`, `Trim`, `Collision`. Trim has no movement or bullet collision. Broad box/mesh collision is isolated in `Collision`, used by the existing navigation builder and footstep surface system. Preserve these groups and the `FarmhouseFoundation` marker in authored variants.
 
 `FarmhouseLayout` owns dimensions; `FarmhouseMeshLibrary` owns reusable topology/UV generation; `FarmhouseFoundationBuilder` owns assembly/material defaults; `FarmEncounterGeometry` owns placement within the larger encounter. Encounter logic and runtime actor behavior do not depend on the visual modules.
 
 ## Build and review
 
-1. Save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 23 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
+1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 24 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
 2. Run **Harvest > Validate Farmhouse Foundation**. It checks prefab connection and persistent mesh ownership in Edit mode. Both modes check hierarchy/collision separation, finite geometry, triangle winding, UV channels, tangents, standing-body clearance, support under circulation points and firing sightlines. Play mode does not require editor prefab/asset ownership for the live objects.
 3. Enter Play mode, run the same menu to additionally check a complete marine NavMesh path from downstairs to the upstairs window.
 4. Walk the front and rear entrances, stairs in both directions, landing and upstairs firing approaches. Check standing/crouching and grenade behavior. The capsule checks allow adjacent traversable stair risers; they do not replace a real CharacterController traversal check.
@@ -45,12 +45,16 @@ The farmhouse keeps the original footprint, floor spacing and road-facing firing
 
 Available here: source/API inspection and independent geometry/layout math checks. Not available here: Unity compilation, UV unwrapping execution, Editor/GPU captures, navigation bake or gameplay traversal. Treat those as review gates before declaring this stage approved.
 
+## Material review
+
+Run **Harvest > Validate Farmhouse Materials**, then **Harvest > Build Farmhouse Material Review**. This creates an isolated neutral-light scene with five surfaces, metre-scaled panels/blocks and reflection spheres. Review scale, grain direction, normal intensity and roughness before returning to The Line. The scene is excluded from the game build. See [MATERIAL_SOURCES.md](MATERIAL_SOURCES.md).
+
 ## Subsequent work packages
 
 | Work package | Deliverable | Acceptance |
 | --- | --- | --- |
 | Modeling refinement | Review foundation in-game; refine roof/porch/trim silhouette, add physically plausible joins and authored prop meshes | Approved scale, no movement snags, house convincing at gameplay distance |
-| Material authoring | Plaster, timber, steel, roofing and concrete PBR maps; consistent texel density and selective wear | Materials distinguish correctly under neutral light; no stretched or uniformly noisy textures |
+| Material authoring | Review installed plaster, timber, steel, roofing and concrete PBR maps; refine tiling, tint, grain direction and selective wear | Materials distinguish correctly under neutral light; no stretched or uniformly noisy textures |
 | Interior dressing | Agricultural terminal, cupboards, seating, possessions, fixtures | Lived-in colony identity with clear circulation and firing access |
 | Local damage | Broken panes, selective plaster chips and plasma scars | Match approved damage placement without making every surface ruined; test bullet behavior |
 | Lighting | Stable geometry/UVs, baked bounce, moving-object probes, interior/exterior reflection coverage and practical lights | Readable room transitions, no leaks or floating characters, complete Editor and build review |
