@@ -36,7 +36,7 @@ The farmhouse keeps the original footprint, floor spacing and road-facing firing
 
 ## Build and review
 
-1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 29 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
+1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 30 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
 2. Run **Harvest > Validate Farmhouse Foundation**. It checks prefab connection and persistent mesh ownership in Edit mode. Both modes check hierarchy/collision separation, finite geometry, triangle winding, UV channels, tangents, standing-body clearance, support under circulation points and firing sightlines. Play mode does not require editor prefab/asset ownership for the live objects.
 3. Enter Play mode, run the same menu to additionally check a complete marine NavMesh path from downstairs to the upstairs window.
 4. Walk the front and rear entrances, stairs in both directions, landing and upstairs firing approaches. Check standing/crouching and grenade behavior. The capsule checks allow adjacent traversable stair risers; they do not replace a real CharacterController traversal check.
@@ -98,3 +98,22 @@ The shed and storage props use dimensioned bevelled meshes with metre UVs, light
 The grain silo gains a pitched lid, rolled rings, a foundation collar and door handle. Its ladder is tangent to the cylindrical surface, with two rails and stand-offs instead of floating axis-aligned rungs. The original six-metre-square collision envelope remains. Small finish geometry remains visual-only. No encounter placements, waves or combat systems change.
 
 Distant settlement boxes become pitched agricultural buildings with selective annexes and silo silhouettes, backed by rolling ground outside the playable terrain. They have no collision, navigation or shadow casting; distant geometry does not contribute to the farmhouse lightmap atlas. Meshes are persistent generated assets. Check the shed interior, silo ladder and horizon from the road in Unity; source checks are not a rendered approval.
+
+
+## Lighting rig and bake review (version 30)
+
+Practical lights follow the farmhouse layout and have modeled ceiling/wall fixtures, controlled warm bulbs and mixed-light shadows. The upper and lower room captures have separate volumes; the farmyard has its own lower-priority capture. Preview reflections render individual faces once at startup; the explicit reflection bake replaces them with saved cubemaps. Classic light-probe samples cover both rooms, stairs and approach, excluding points inside collision. The rig adds no gameplay or collision. An artist-owned farmhouse replacement supplies its own fixture/probe rig.
+
+Practical color/intensity/range live in `Harvest Look.asset`. New fields leave existing daylight/atmosphere tuning untouched. On the first rig build, URP's additional-light shadow support/per-pixel mode is enabled with a minimum 4096 shadow atlas; subsequent builds retain pipeline edits. The renderer/suppression/smoke features are not changed. `Harvest Lighting.lighting` is persistent and editable: stock Progressive CPU, directional lightmaps, baked indirect with realtime direct lights/shadows, 24 texels/metre, 256 indirect/environment samples, three maximum bounces and limited indirect contact AO. These are starting settings, not a completed or measured bake. No custom post-processing is added.
+
+Review steps after pulling:
+
+1. Save manual changes; run **Harvest > Build The Line Prototype** (version 30).
+2. Run **Harvest > Validate Farmhouse Foundation**, **Harvest > Validate Visual Foundation**, and **Harvest > Lighting > Validate The Line Lighting**. Inspect ceiling-fixture contacts and bulb placement.
+3. Outside Play mode, run **Harvest > Lighting > Bake The Line Lighting**. Wait for Unity's bake to finish; inspect noise, UV seams, bounce and room/exterior transitions. Adjust the persistent settings if needed. Rebuilding the scene invalidates baked data, so bake after geometry is approved.
+4. Run **Harvest > Lighting > Bake The Line Reflections** after GI. It stores successful cubemaps under `Assets/Harvest/Rendering/Reflections`, changes those probes to saved custom captures, and saves the scene. Check window reflections and steel roughness. Save again after any lightmap or scene edits.
+5. Review the road approach, porch, downstairs dining/kitchen, stairs, upper desk and firing window at gameplay FOV. Check moving marines and weapons against the baked room lighting, then the full encounter and standalone build. Reflection boundaries, shadows and performance still need a GPU review.
+
+Saved reflection capture temporarily hides actor renderers and restores them in a finally block, avoiding frozen characters/viewmodel stacks in environment cubemaps. The bake menus operate only on The Line outside Play mode. Rebuilds do not start long bakes automatically and do not reset authored material, atmosphere, post-profile or lighting-settings values. Unity compilation, generated mesh/UV execution, bake execution and GPU visuals could not be exercised in this environment.
+
+API references: [Unity 6.3 LightingSettings](https://docs.unity3d.com/6000.3/Documentation/ScriptReference/LightingSettings.html), [BakeAsync](https://docs.unity3d.com/6000.3/Documentation/ScriptReference/Lightmapping.BakeAsync.html), [BakeReflectionProbe](https://docs.unity3d.com/6000.3/Documentation/ScriptReference/Lightmapping.BakeReflectionProbe.html), [URP 17.3 asset API](https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@17.3/api/UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset.html).

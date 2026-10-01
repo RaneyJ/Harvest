@@ -5,6 +5,14 @@ namespace Harvest
     [CreateAssetMenu(menuName = "Harvest/Visual Profile")]
     public sealed class HarvestVisualProfile : ScriptableObject
     {
+        [Header("Practical lighting (rebuild after editing)")]
+        public Color PracticalColor = new Color(1f, .78f, .53f);
+        [Min(0f)] public float GroundPracticalIntensity = 1.4f;
+        [Min(0f)] public float UpperPracticalIntensity = 1.2f;
+        [Min(0f)] public float PorchPracticalIntensity = .7f;
+        [Range(1f, 12f)] public float PracticalRange = 7f;
+        [HideInInspector] public int PracticalSetupRevision;
+        [Header("Daylight and atmosphere")]
         public Color SunColor = new Color(1f, 0.82f, 0.64f);
         [Min(0f)] public float SunIntensity = 1.8f;
         public Vector3 SunRotation = new Vector3(28f, -55f, 0f);

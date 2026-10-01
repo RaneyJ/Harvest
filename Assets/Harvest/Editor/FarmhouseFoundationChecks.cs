@@ -14,7 +14,7 @@ namespace Harvest.Editor
             try
             {
                 var house = UnityEngine.Object.FindFirstObjectByType<FarmhouseFoundation>();
-                Require(house != null, "Rebuild The Line (version 26) before checking the farmhouse.");
+                Require(house != null, "Rebuild The Line before checking the farmhouse.");
                 FarmhouseLayout l = house.Layout;
                 FarmhouseFoundationBuilder.ValidateLayout(l);
                 // Prefab connections and asset ownership are authoring checks, not runtime prerequisites.

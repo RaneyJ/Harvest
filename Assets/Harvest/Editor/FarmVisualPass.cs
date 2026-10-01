@@ -21,6 +21,7 @@ namespace Harvest.Editor
             }
             HarvestSurfaceLibrary.Apply();
             Light sun = new GameObject("Harvest late afternoon sun").AddComponent<Light>();
+            sun.lightmapBakeType=LightmapBakeType.Mixed;
             sun.type = LightType.Directional; sun.color = profile.SunColor; sun.intensity = profile.SunIntensity;
             sun.transform.rotation = Quaternion.Euler(profile.SunRotation);
             sun.shadows = LightShadows.Soft; sun.shadowBias = 0.035f; sun.shadowNormalBias = 0.25f;
@@ -63,24 +64,10 @@ namespace Harvest.Editor
                 EditorUtility.SetDirty(post);
             }
             volume.sharedProfile = post;
-            AddLamp(new Vector3(-16f, 2.65f, 2f), 1.4f, 6f);
-            AddLamp(new Vector3(-21f, 5.6f, 2f), 1.1f, 5f);
-            ReflectionProbe probe = new GameObject("Farmyard reflection probe").AddComponent<ReflectionProbe>();
-            probe.transform.position = new Vector3(-15f, 3f, -3f);
-            probe.size = new Vector3(45f, 18f, 42f);
-            probe.mode = ReflectionProbeMode.Realtime;
-            probe.refreshMode = ReflectionProbeRefreshMode.OnAwake;
-            probe.timeSlicingMode = ReflectionProbeTimeSlicingMode.AllFacesAtOnce;
-            probe.resolution = 128; probe.farClipPlane = 150f; probe.boxProjection = true;
+            FarmhouseLighting.Build(profile);
+            SliceLightingReview.Configure();
             Background();
             AssetDatabase.SaveAssets();
-        }
-        static void AddLamp(Vector3 position, float intensity, float range)
-        {
-            Light lamp = new GameObject("Farmhouse warm practical light").AddComponent<Light>();
-            lamp.type = LightType.Point; lamp.transform.position = position;
-            lamp.color = new Color(1f, 0.71f, 0.43f); lamp.intensity = intensity; lamp.range = range;
-            lamp.shadows = LightShadows.None;
         }
         static void Background()
         {

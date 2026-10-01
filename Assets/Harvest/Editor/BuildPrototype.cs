@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "29";
+        const string SceneVersion = "30";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the agricultural detail pass. Rebuild The Line for refined shed joinery, a capped grain silo with attached ladder, scanned prop surfaces and a shaped distant farm landscape. Save manual scene edits first; existing tuning, configured waves and artist-owned overrides are preserved.",
+                    "This scene predates the slice lighting and visual refinement passes. Rebuild The Line for finished farmhouse joinery, farmyard detail, distant silhouettes and fixture-mounted practical lighting. Save manual scene edits first; tuning, waves and artist-owned overrides are preserved. Use Harvest > Lighting to bake and review after rebuilding.",
                     "Rebuild scene", "Later"))
                     Build();
             };
