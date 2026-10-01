@@ -129,3 +129,13 @@ The timber board's top previously coincided with the plaster reveal, and the old
 Screenshot review showed nearly black rooms outside direct sun patches. Each storey now has two shadowed practical fixtures, with stronger initial intensity and a longer range. Only exact previous default values migrate once; deliberate lamp tuning and daylight/post settings remain. Eight aperture-sized, inward-facing baked rectangle lights supply a restrained cool window fill after a GI bake. They add no runtime light cost or new gameplay. The sun still supplies the warm directional patches. `WindowBounceColor` and `WindowBounceIntensity` are editable in `Harvest Look.asset`.
 
 Rebuild, bake lighting, then bake reflections. The lighting validator now accepts baked window emitters and reports actual farmhouse lightmap assignment. Missing/partial bake data is reported distinctly from light rig setup. Compare both rooms and the stairs at the same camera position/FOV as the submitted images; preserve shadow depth while checking furniture/weapon readability. Source/layout checks passed, but rendered intensity and bake results still require Unity review.
+
+### Surface and grain refinement (scene 33)
+
+Rebuild The Line to apply the lighting and surface passes, then bake lighting and reflections through the Harvest lighting review menu. Save scene edits before rebuilding.
+
+Interior trim, stairs and furniture now clone the approved timber maps into separately tunable finishes with gentler normal strength and longer grain. Dimensioned timber meshes align their grain with each part while retaining original lightmap UVs and collision. Existing finish materials retain artist tuning. Construction timber and floorboards keep their distinct finishes.
+
+Visual soil aprons blend the farmhouse base, porch, access track and outer road shoulders into the field surface. Thin tapered stems, narrow leaves, individual seed heads and awns replace the block-shaped grain. Eight field chunks retain the original crop locations and encounter lanes; crops and aprons have no movement or bullet colliders. Generated geometry uses the existing soil shader and stock URP Lit crop materials.
+
+Source and geometry checks are performed outside Unity. Compilation, lightmap baking and the final appearance must be checked in Unity; this environment cannot run the Editor.

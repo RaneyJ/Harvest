@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
@@ -17,7 +16,8 @@ namespace Harvest.Editor
                 Box("Faded road center marking", concrete, new Vector3(0f, 0.047f, z), new Vector3(0.12f, 0.012f, 2.8f), false);
             Box("Farm access track", soil, new Vector3(-12f, 0.03f, -12f), new Vector3(10f, 0.06f, 4f));
             FarmhouseFoundationBuilder.Build();
-            GrainFields(grain);
+            FarmGroundTransitions.Build(soil);
+            FarmGrainGeometry.Build();
             for (int side = -1; side <= 1; side += 2)
                 for (int z = -39; z <= 57; z += 8)
                 {
@@ -52,39 +52,6 @@ namespace Harvest.Editor
             Mesh mesh = SaveMesh("Farm Terrain", vertices, triangles, uv);
             GameObject root = MeshObject("Farm terrain", mesh, material);
             root.AddComponent<MeshCollider>().sharedMesh = mesh;
-        }
-        static void GrainFields(Material material)
-        {
-            GameObject template = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            Mesh cube = template.GetComponent<MeshFilter>().sharedMesh;
-            var combine = new List<CombineInstance>();
-            for (int side = -1; side <= 1; side += 2)
-                for (int row = 0; row < 26; row++)
-                    for (int column = 0; column < 9; column++)
-                    {
-                        float x = side * (10.5f + column * 2f), z = -44f + row * 4.5f;
-                        if (side < 0 && z > -16f && z < 10f) continue; // House and its yard.
-                        if (side < 0 && x > -17f && z > 30f && z < 46f) continue; // Burned freight car.
-                        if (side < 0 && x < -18f && z > 14f && z < 24f) continue; // Equipment shed.
-                        if (side > 0 && x > 20f && z > 43f && z < 53f) continue; // Grain silo.
-                        if (side > 0 && x > 20f && x < 26f && z > 20f && z < 34f) continue;
-                        for (int stalk = 0; stalk < 4; stalk++)
-                        {
-                            Vector3 position = new Vector3(x + (stalk % 2) * 0.35f, 0.65f, z + (stalk / 2) * 0.5f);
-                            combine.Add(new CombineInstance { mesh = cube, transform = Matrix4x4.TRS(position,
-                                Quaternion.Euler(0f, row * 17f, side * 5f), new Vector3(0.055f, 1.35f, 0.055f)) });
-                            combine.Add(new CombineInstance { mesh = cube, transform = Matrix4x4.TRS(position + Vector3.up * 0.65f,
-                                Quaternion.identity, new Vector3(0.14f, 0.25f, 0.1f)) });
-                        }
-                    }
-            Object.DestroyImmediate(template);
-            const string path = "Assets/Harvest/Data/Grain Fields.asset";
-            Mesh mesh = AssetDatabase.LoadAssetAtPath<Mesh>(path);
-            if (mesh == null) { mesh = new Mesh(); AssetDatabase.CreateAsset(mesh, path); }
-            mesh.Clear(); mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-            mesh.CombineMeshes(combine.ToArray(), true, true);
-            mesh.RecalculateBounds(); EditorUtility.SetDirty(mesh);
-            MeshObject("Grain fields — visual concealment", mesh, material); // No bullet or movement collider.
         }
         static Mesh SaveMesh(string name, Vector3[] vertices, int[] triangles, Vector2[] uv)
         {

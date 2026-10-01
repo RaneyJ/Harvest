@@ -16,7 +16,7 @@ namespace Harvest.Editor
             public GameObject Root;
             public Transform Shell, Roof, Porch, Interior, Trim, Collision;
             public FarmhouseLayout Layout;
-            public Material Plaster, Timber, Steel, Roofing, Stone;
+            public Material Plaster, Timber, TrimTimber, StairTimber, Steel, Roofing, Stone;
         }
         readonly struct Opening
         {
@@ -62,6 +62,8 @@ namespace Harvest.Editor
                 a.Stone = Material("Foundation", new Color(0.40f, 0.41f, 0.37f), 0f, 0.10f);
                 FarmhouseMaterialLibrary.ApplyInstalled();
                 FarmhousePlasterFinish.ApplyInstalled();
+                a.TrimTimber=FarmhouseTimberFinish.Material("Trim",a.Timber,.22f);
+                a.StairTimber=FarmhouseTimberFinish.Material("Stairs",a.Timber,.18f);
                 Shell(a); FloorsAndStairs(a); Roof(a); Porch(a); Interior(a); Utilities(a);
                 FarmhouseJoinery.Ceilings(a.Interior,a.Plaster,layout,FloorThickness);
                 AssetDatabase.SaveAssets();
@@ -126,8 +128,8 @@ namespace Harvest.Editor
                 float left = o.Center - o.Width * 0.5f, right = o.Center + o.Width * 0.5f;
                 if (left < cursor || right > length * 0.5f) throw new InvalidOperationException("Overlapping wall openings: " + name);
                 Panel(a, sections, name + " solid " + o.Name, alongZ, fixedAxis, cursor, left, floor, a.Layout.StoreyHeight);
-                FarmhouseJoinery.Skirting(a.Trim,a.Timber,a.Layout,alongZ,fixedAxis,outside,cursor,left,floor==0f?a.Layout.GroundFloorTop:floor,name+" "+o.Name);
-                FarmhouseJoinery.Opening(a.Trim,a.Timber,a.Layout,alongZ,fixedAxis,outside,o.Center,o.Width,o.Sill,o.Top,floor,o.Name);
+                FarmhouseJoinery.Skirting(a.Trim,a.TrimTimber,a.Layout,alongZ,fixedAxis,outside,cursor,left,floor==0f?a.Layout.GroundFloorTop:floor,name+" "+o.Name);
+                FarmhouseJoinery.Opening(a.Trim,a.TrimTimber,a.Layout,alongZ,fixedAxis,outside,o.Center,o.Width,o.Sill,o.Top,floor,o.Name);
                 if (o.Sill > 0f) Panel(a, sections, o.Name + " sill", alongZ, fixedAxis, left, right, floor, o.Sill);
                 Panel(a, sections, o.Name + " lintel", alongZ, fixedAxis, left, right, floor + o.Top, a.Layout.StoreyHeight - o.Top);
                 float outer = fixedAxis + outside * (a.Layout.WallThickness * 0.5f + 0.045f);
@@ -138,9 +140,9 @@ namespace Harvest.Editor
                 cursor = right;
             }
             Panel(a, sections, name + " end", alongZ, fixedAxis, cursor, length * 0.5f, floor, a.Layout.StoreyHeight);
-            FarmhouseJoinery.Skirting(a.Trim,a.Timber,a.Layout,alongZ,fixedAxis,outside,cursor,length*.5f,floor==0f?a.Layout.GroundFloorTop:floor,name+" end");
+            FarmhouseJoinery.Skirting(a.Trim,a.TrimTimber,a.Layout,alongZ,fixedAxis,outside,cursor,length*.5f,floor==0f?a.Layout.GroundFloorTop:floor,name+" end");
             foreach(Opening o in openings) if(o.Sill>0f)
-                FarmhouseJoinery.Skirting(a.Trim,a.Timber,a.Layout,alongZ,fixedAxis,outside,o.Center-o.Width*.5f,o.Center+o.Width*.5f,floor==0f?a.Layout.GroundFloorTop:floor,name+" below "+o.Name);
+                FarmhouseJoinery.Skirting(a.Trim,a.TrimTimber,a.Layout,alongZ,fixedAxis,outside,o.Center-o.Width*.5f,o.Center+o.Width*.5f,floor==0f?a.Layout.GroundFloorTop:floor,name+" below "+o.Name);
             // Flat, touching sections share one facade mesh. No inset seams or per-panel UV resets.
             Visual(a.Shell, name + " wall", FarmhouseMeshLibrary.Wall(name, sections), a.Plaster, Vector3.zero);
         }
@@ -152,7 +154,7 @@ namespace Harvest.Editor
             sections.Add(new Bounds(WallPosition(alongZ, fixedAxis, (start + end) * 0.5f, bottom + height * 0.5f), size));
         }
         static void Frame(Assembly a, string name, bool alongZ, float fixedAxis, float center, float y, float width, float height)
-        { Part(a, a.Trim, name, a.Timber, WallPosition(alongZ, fixedAxis, center, y), WallSize(alongZ, width, height, 0.11f), 0.006f); }
+        { Part(a, a.Trim, name, a.TrimTimber, WallPosition(alongZ, fixedAxis, center, y), WallSize(alongZ, width, height, 0.11f), 0.006f); }
         static Vector3 WallPosition(bool alongZ, float fixedAxis, float center, float y) =>
             alongZ ? new Vector3(fixedAxis, y, center) : new Vector3(center, y, fixedAxis);
         static Vector3 WallSize(bool alongZ, float width, float height, float depth) =>
@@ -175,9 +177,9 @@ namespace Harvest.Editor
                 Vector3 top = l.StairPoint(i);
                 Solid(a, "Stair support " + i, new Vector3(top.x, (l.GroundFloorTop + top.y) * 0.5f, top.z),
                     new Vector3(l.StairWidth, top.y - l.GroundFloorTop, l.TreadDepth));
-                Part(a, a.Interior, "Stair tread " + i, a.Timber, top - Vector3.up * 0.035f,
+                Part(a, a.Interior, "Stair tread " + i, a.StairTimber, top - Vector3.up * 0.035f,
                     new Vector3(l.StairWidth, 0.07f, l.TreadDepth), 0.006f);
-                Part(a, a.Interior, "Stair riser " + i, a.Timber,
+                Part(a, a.Interior, "Stair riser " + i, a.StairTimber,
                     new Vector3(top.x, top.y - l.Riser * 0.5f, top.z - l.TreadDepth * 0.5f + 0.018f),
                     new Vector3(l.StairWidth, l.Riser, 0.036f), 0.004f);
             }
@@ -292,7 +294,7 @@ namespace Harvest.Editor
         static GameObject Part(Assembly a, Transform group, string name, Material material, Vector3 position,
             Vector3 size, float bevel = 0.015f, bool solid = false, bool rotateUV = false)
         {
-            GameObject visual = Visual(group, name, FarmhouseMeshLibrary.Box(size, bevel, rotateUV), material, position);
+            GameObject visual = Visual(group, name, FarmhouseTimberFinish.IsTimber(material) ? FarmhouseTimberFinish.Box(size, bevel) : FarmhouseMeshLibrary.Box(size, bevel, rotateUV), material, position);
             if (solid) Solid(a, name, position, size);
             return visual;
         }

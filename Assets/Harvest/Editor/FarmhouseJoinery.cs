@@ -84,7 +84,7 @@ namespace Harvest.Editor
         static GameObject Box(Transform root,string name,Material material,Vector3 center,Vector3 size,float bevel=.005f)
         {
             var go=new GameObject(name);go.transform.SetParent(root,false);go.transform.localPosition=center;
-            go.AddComponent<MeshFilter>().sharedMesh=FarmhouseMeshLibrary.Box(size,bevel);
+            go.AddComponent<MeshFilter>().sharedMesh=FarmhouseTimberFinish.IsTimber(material)?FarmhouseTimberFinish.Box(size,bevel):FarmhouseMeshLibrary.Box(size,bevel);
             go.AddComponent<MeshRenderer>().sharedMaterial=material;
             GameObjectUtility.SetStaticEditorFlags(go,StaticEditorFlags.ContributeGI|StaticEditorFlags.BatchingStatic);
             return go;

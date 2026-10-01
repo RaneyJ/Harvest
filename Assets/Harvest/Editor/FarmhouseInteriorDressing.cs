@@ -19,7 +19,7 @@ namespace Harvest.Editor
             FarmhouseMeshLibrary.EnsureFolder("Assets/Harvest/Materials");
             var settings = AssetDatabase.LoadAssetAtPath<FarmhouseDressingLayout>(LayoutPath);
             if (settings == null) { settings = ScriptableObject.CreateInstance<FarmhouseDressingLayout>(); AssetDatabase.CreateAsset(settings,LayoutPath); }
-            var p = new Palette { Wood=wood,Steel=steel,Stone=stone,
+            var p = new Palette { Wood=FarmhouseTimberFinish.Material("Furniture",wood,.30f),Steel=steel,Stone=stone,
                 Paint=Material("Utility olive",new Color(.26f,.30f,.23f),.2f,.25f),
                 Cloth=Material("Canvas",new Color(.30f,.34f,.30f),0f,.08f),
                 Linen=Material("Linen",new Color(.65f,.64f,.57f),0f,.07f),
@@ -84,14 +84,14 @@ namespace Harvest.Editor
         static GameObject Box(Transform root,string name,Material material,Vector3 center,Vector3 size,bool solid=false,float bevel=.006f)
         {
             var go=new GameObject(name); go.transform.SetParent(root,false); go.transform.localPosition=center;
-            go.AddComponent<MeshFilter>().sharedMesh=FarmhouseMeshLibrary.Box(size,bevel);
+            go.AddComponent<MeshFilter>().sharedMesh=FarmhouseTimberFinish.IsTimber(material)?FarmhouseTimberFinish.Box(size,bevel):FarmhouseMeshLibrary.Box(size,bevel);
             go.AddComponent<MeshRenderer>().sharedMaterial=material;
             GameObjectUtility.SetStaticEditorFlags(go,StaticEditorFlags.ContributeGI|StaticEditorFlags.BatchingStatic);
             if (solid)
             {
                 var body=new GameObject(name+" collision");body.transform.SetParent(root,false);body.transform.localPosition=center;
                 body.AddComponent<BoxCollider>().size=size;
-                if (AssetDatabase.GetAssetPath(material) == FarmhouseMaterialLibrary.MaterialPath("Timber")) body.AddComponent<FootstepSurface>().Kind=FootstepSurfaceKind.Wood;
+                if (FarmhouseTimberFinish.IsTimber(material)) body.AddComponent<FootstepSurface>().Kind=FootstepSurfaceKind.Wood;
             }
             return go;
         }
