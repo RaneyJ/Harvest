@@ -25,9 +25,10 @@ namespace Harvest.Editor
                     Size(alongZ,.075f,floor+top-bottom,.05f));
             if(sill>0f)
             {
-                Box(root,name+" deep timber sill",wood,Point(alongZ,axis-outside*.035f,center,floor+sill-.025f),
-                    Size(alongZ,width+.18f,.05f,l.WallThickness+.16f),.005f);
-                Box(root,name+" sill apron",wood,Point(alongZ,inside,center,floor+sill-.085f),Size(alongZ,width+.08f,.07f,.045f));
+                // One board sits above the plaster reveal and serves both interior and exterior.
+                Box(root,name+" deep timber sill",wood,Point(alongZ,axis,center,floor+sill+.025f),
+                    Size(alongZ,width+.18f,.05f,l.WallThickness+.22f),.005f);
+                Box(root,name+" sill apron",wood,Point(alongZ,axis-outside*(l.WallThickness*.5f+.021f),center,floor+sill-.035f),Size(alongZ,width+.08f,.07f,.045f));
             }
         }
         public static void Ceilings(Transform root, Material plaster, FarmhouseLayout l, float floorThickness)

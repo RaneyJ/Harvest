@@ -132,7 +132,6 @@ namespace Harvest.Editor
                 Panel(a, sections, o.Name + " lintel", alongZ, fixedAxis, left, right, floor + o.Top, a.Layout.StoreyHeight - o.Top);
                 float outer = fixedAxis + outside * (a.Layout.WallThickness * 0.5f + 0.045f);
                 Frame(a, o.Name + " header", alongZ, outer, o.Center, floor + o.Top, o.Width + 0.18f, 0.10f);
-                if (o.Sill > 0f) Frame(a, o.Name + " ledge", alongZ, outer, o.Center, floor + o.Sill, o.Width + 0.18f, 0.10f);
                 foreach (int side in new[] { -1, 1 })
                     Frame(a, o.Name + " jamb " + side, alongZ, outer, o.Center + side * o.Width * 0.5f,
                         floor + (o.Sill + o.Top) * 0.5f, 0.09f, o.Top - o.Sill);

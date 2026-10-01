@@ -36,7 +36,7 @@ The farmhouse keeps the original footprint, floor spacing and road-facing firing
 
 ## Build and review
 
-1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 30 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
+1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 31 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
 2. Run **Harvest > Validate Farmhouse Foundation**. It checks prefab connection and persistent mesh ownership in Edit mode. Both modes check hierarchy/collision separation, finite geometry, triangle winding, UV channels, tangents, standing-body clearance, support under circulation points and firing sightlines. Play mode does not require editor prefab/asset ownership for the live objects.
 3. Enter Play mode, run the same menu to additionally check a complete marine NavMesh path from downstairs to the upstairs window.
 4. Walk the front and rear entrances, stairs in both directions, landing and upstairs firing approaches. Check standing/crouching and grenade behavior. The capsule checks allow adjacent traversable stair risers; they do not replace a real CharacterController traversal check.
@@ -117,3 +117,8 @@ Review steps after pulling:
 Saved reflection capture temporarily hides actor renderers and restores them in a finally block, avoiding frozen characters/viewmodel stacks in environment cubemaps. The bake menus operate only on The Line outside Play mode. Rebuilds do not start long bakes automatically and do not reset authored material, atmosphere, post-profile or lighting-settings values. Unity compilation, generated mesh/UV execution, bake execution and GPU visuals could not be exercised in this environment.
 
 API references: [Unity 6.3 LightingSettings](https://docs.unity3d.com/6000.3/Documentation/ScriptReference/LightingSettings.html), [BakeAsync](https://docs.unity3d.com/6000.3/Documentation/ScriptReference/Lightmapping.BakeAsync.html), [BakeReflectionProbe](https://docs.unity3d.com/6000.3/Documentation/ScriptReference/Lightmapping.BakeReflectionProbe.html), [URP 17.3 asset API](https://docs.unity3d.com/Packages/com.unity.render-pipelines.universal@17.3/api/UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset.html).
+
+
+## Window-sill contact correction (version 31)
+
+The timber board's top previously coincided with the plaster reveal, and the older exterior ledge overlapped it. Each window now uses one board spanning the wall and both overhangs. Its underside rests on the plaster sill; its top is 50mm above the reveal. The interior apron meets the board underside and embeds its back 1.5mm into the wall rather than floating. Removed the duplicate exterior ledges. Window/wall collision is unchanged; inspect the joint inside and outside after rebuilding, then re-bake lighting/reflections. Contact/overlap arithmetic passed; Unity rendering remains to be checked.
