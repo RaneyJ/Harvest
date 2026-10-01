@@ -36,7 +36,7 @@ The farmhouse keeps the original footprint, floor spacing and road-facing firing
 
 ## Build and review
 
-1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 26 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
+1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 28 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
 2. Run **Harvest > Validate Farmhouse Foundation**. It checks prefab connection and persistent mesh ownership in Edit mode. Both modes check hierarchy/collision separation, finite geometry, triangle winding, UV channels, tangents, standing-body clearance, support under circulation points and firing sightlines. Play mode does not require editor prefab/asset ownership for the live objects.
 3. Enter Play mode, run the same menu to additionally check a complete marine NavMesh path from downstairs to the upstairs window.
 4. Walk the front and rear entrances, stairs in both directions, landing and upstairs firing approaches. Check standing/crouching and grenade behavior. The capsule checks allow adjacent traversable stair risers; they do not replace a real CharacterController traversal check.
@@ -82,3 +82,10 @@ After pulling, save scene edits and run **Harvest > Build The Line Prototype**, 
 Rebuild The Line after pulling. The rack controller now rests on a top shelf, seed-bin bottoms meet their shelf tops, and tabletop/chest notebooks use their actual support height. The desk has a flat writing pad with exposed paper and its top binding toward the terminal, following the desk's rotation. Source dimensions/contact math were checked; inspect the shelf and desk in Unity after rebuilding. Artist-owned replacement prefabs retain their own geometry and placements.
 
 The same version replaces full-room floor strips with roughly 20cm-wide, 2.3m-long boards, staggered in thirds. Both storeys use the same house-space row/joint grid, clipped around the existing stairwell. Narrow 2mm joints have a backing below them; movement continues to use the original flat floor colliders. Each floor section has a combined mesh and a separate persistent `Farmhouse Plank Floor.mat`, cloned from the approved timber. Grain runs along the boards with a longer longitudinal scale and deterministic per-board UV offsets; furniture's timber material is unchanged. Inspect grain scale, joints and the upstairs stairwell edge after rebuilding. Floor material edits persist across rebuilds.
+
+
+## Architectural finish (version 28)
+
+Interior openings gain timber casings, sill boards and aprons; floor/wall joins gain low skirting that stops at doorways. Thin plaster ceiling finishes follow the existing upper-floor sections and preserve the stair opening. Roof edges now have fascia, soffits, pitched ridge-cap wings and open gutters with end caps and wall-bracketed downpipes. These finishes have no collision; the original shell, floors, roof collision, movement routes and firing apertures are retained. The shared generated house meshes are eligible for static batching as well as GI.
+
+After rebuilding, inspect window ledges, doorway feet, ceilings over stairs, the roof ridge and rainwater joins. Source dimensions can be checked here; Unity mesh generation, UV unwrap and visual quality still require an Editor review.

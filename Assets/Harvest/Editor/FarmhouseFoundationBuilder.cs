@@ -63,6 +63,7 @@ namespace Harvest.Editor
                 FarmhouseMaterialLibrary.ApplyInstalled();
                 FarmhousePlasterFinish.ApplyInstalled();
                 Shell(a); FloorsAndStairs(a); Roof(a); Porch(a); Interior(a); Utilities(a);
+                FarmhouseJoinery.Ceilings(a.Interior,a.Plaster,layout,FloorThickness);
                 AssetDatabase.SaveAssets();
                 GameObject prefab = PrefabUtility.SaveAsPrefabAsset(a.Root, GeneratedPath);
                 if (prefab == null) throw new InvalidOperationException("Farmhouse prefab could not be saved.");
@@ -125,6 +126,8 @@ namespace Harvest.Editor
                 float left = o.Center - o.Width * 0.5f, right = o.Center + o.Width * 0.5f;
                 if (left < cursor || right > length * 0.5f) throw new InvalidOperationException("Overlapping wall openings: " + name);
                 Panel(a, sections, name + " solid " + o.Name, alongZ, fixedAxis, cursor, left, floor, a.Layout.StoreyHeight);
+                FarmhouseJoinery.Skirting(a.Trim,a.Timber,a.Layout,alongZ,fixedAxis,outside,cursor,left,floor==0f?a.Layout.GroundFloorTop:floor,name+" "+o.Name);
+                FarmhouseJoinery.Opening(a.Trim,a.Timber,a.Layout,alongZ,fixedAxis,outside,o.Center,o.Width,o.Sill,o.Top,floor,o.Name);
                 if (o.Sill > 0f) Panel(a, sections, o.Name + " sill", alongZ, fixedAxis, left, right, floor, o.Sill);
                 Panel(a, sections, o.Name + " lintel", alongZ, fixedAxis, left, right, floor + o.Top, a.Layout.StoreyHeight - o.Top);
                 float outer = fixedAxis + outside * (a.Layout.WallThickness * 0.5f + 0.045f);
@@ -136,6 +139,9 @@ namespace Harvest.Editor
                 cursor = right;
             }
             Panel(a, sections, name + " end", alongZ, fixedAxis, cursor, length * 0.5f, floor, a.Layout.StoreyHeight);
+            FarmhouseJoinery.Skirting(a.Trim,a.Timber,a.Layout,alongZ,fixedAxis,outside,cursor,length*.5f,floor==0f?a.Layout.GroundFloorTop:floor,name+" end");
+            foreach(Opening o in openings) if(o.Sill>0f)
+                FarmhouseJoinery.Skirting(a.Trim,a.Timber,a.Layout,alongZ,fixedAxis,outside,o.Center-o.Width*.5f,o.Center+o.Width*.5f,floor==0f?a.Layout.GroundFloorTop:floor,name+" below "+o.Name);
             // Flat, touching sections share one facade mesh. No inset seams or per-panel UV resets.
             Visual(a.Shell, name + " wall", FarmhouseMeshLibrary.Wall(name, sections), a.Plaster, Vector3.zero);
         }
@@ -217,13 +223,8 @@ namespace Harvest.Editor
                 for (int i = 0; i <= seams; i++)
                     Part(a, roof.transform, "Standing seam " + i, a.Steel,
                         new Vector3(0f, 0.11f, -depth * 0.5f + i * depth / seams), new Vector3(slopeLength, 0.035f, 0.035f), 0.006f);
-                Part(a, a.Trim, "Eave gutter " + side, a.Steel,
-                    new Vector3(side * span, l.RidgeHeight - span * Mathf.Tan(pitch) + 0.05f, 0f), new Vector3(0.16f, 0.12f, depth));
-                Part(a, a.Trim, "Downpipe " + side, a.Steel,
-                    new Vector3(side * (l.HalfWidth + 0.23f), l.EavesHeight * 0.5f, l.HalfDepth - 0.5f),
-                    new Vector3(0.10f, l.EavesHeight, 0.10f), 0.02f);
             }
-            Part(a, a.Roof, "Ridge cap", a.Steel, new Vector3(0f, l.RidgeHeight + 0.16f, 0f), new Vector3(0.24f, 0.08f, depth));
+            FarmhouseJoinery.RoofEdges(a.Trim,a.Timber,a.Steel,l);
             Mesh gable = FarmhouseMeshLibrary.Gable(l.HalfWidth * 2f, l.RidgeHeight - l.EavesHeight, l.WallThickness, l.EavesHeight);
             foreach (int side in new[] { -1, 1 })
             {
@@ -302,7 +303,7 @@ namespace Harvest.Editor
             visual.transform.SetParent(group, false); visual.transform.localPosition = position;
             visual.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = visual.AddComponent<MeshRenderer>(); renderer.sharedMaterial = material;
-            GameObjectUtility.SetStaticEditorFlags(visual, StaticEditorFlags.ContributeGI);
+            GameObjectUtility.SetStaticEditorFlags(visual, StaticEditorFlags.ContributeGI|StaticEditorFlags.BatchingStatic);
             return visual;
         }
         static void Solid(Assembly a, string name, Vector3 center, Vector3 size, bool wood = false)
