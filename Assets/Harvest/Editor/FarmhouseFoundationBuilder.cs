@@ -61,6 +61,7 @@ namespace Harvest.Editor
                 a.Roofing = Material("Roofing", new Color(0.33f, 0.35f, 0.34f), 0.55f, 0.25f);
                 a.Stone = Material("Foundation", new Color(0.40f, 0.41f, 0.37f), 0f, 0.10f);
                 FarmhouseMaterialLibrary.ApplyInstalled();
+                FarmhousePlasterFinish.ApplyInstalled();
                 Shell(a); FloorsAndStairs(a); Roof(a); Porch(a); Interior(a); Utilities(a);
                 AssetDatabase.SaveAssets();
                 GameObject prefab = PrefabUtility.SaveAsPrefabAsset(a.Root, GeneratedPath);
@@ -90,41 +91,42 @@ namespace Harvest.Editor
         static void Shell(Assembly a)
         {
             FarmhouseLayout l = a.Layout;
-            Wall(a, "Ground front", false, -l.HalfDepth, -1, 0f, l.HalfWidth * 2f,
+            Wall(a, "Ground front", false, -l.HalfDepth, -1, 0f, (l.HalfWidth * 2f + l.WallThickness),
                 new Opening("Kitchen window", -3.8f, 2f, 0.95f, 2.25f),
                 new Opening("Front entrance", 0f, 2.2f, 0f, 2.6f),
                 new Opening("Front side window", 3.8f, 2f, 0.95f, 2.25f));
-            Wall(a, "Ground rear", false, l.HalfDepth, 1, 0f, l.HalfWidth * 2f,
+            Wall(a, "Ground rear", false, l.HalfDepth, 1, 0f, (l.HalfWidth * 2f + l.WallThickness),
                 new Opening("Rear service entrance", 0f, 1.4f, 0f, 2.5f));
-            Wall(a, "Ground road", true, l.HalfWidth, 1, 0f, l.HalfDepth * 2f,
+            Wall(a, "Ground road", true, l.HalfWidth, 1, 0f, (l.HalfDepth * 2f - l.WallThickness),
                 new Opening("Ground road window", 1f, 3.2f, 0.9f, 2.2f));
-            Wall(a, "Ground field", true, -l.HalfWidth, -1, 0f, l.HalfDepth * 2f,
+            Wall(a, "Ground field", true, -l.HalfWidth, -1, 0f, (l.HalfDepth * 2f - l.WallThickness),
                 new Opening("Ground field window", 3f, 2.4f, 0.9f, 2.2f));
-            Wall(a, "Upper front", false, -l.HalfDepth, -1, l.StoreyHeight, l.HalfWidth * 2f,
+            Wall(a, "Upper front", false, -l.HalfDepth, -1, l.StoreyHeight, (l.HalfWidth * 2f + l.WallThickness),
                 new Opening("Upstairs front firing window", 1f, 3.2f, 0.85f, 2.3f));
-            Wall(a, "Upper rear", false, l.HalfDepth, 1, l.StoreyHeight, l.HalfWidth * 2f,
+            Wall(a, "Upper rear", false, l.HalfDepth, 1, l.StoreyHeight, (l.HalfWidth * 2f + l.WallThickness),
                 new Opening("Upstairs rear window", 1f, 3.2f, 0.85f, 2.3f));
-            Wall(a, "Upper road", true, l.HalfWidth, 1, l.StoreyHeight, l.HalfDepth * 2f,
+            Wall(a, "Upper road", true, l.HalfWidth, 1, l.StoreyHeight, (l.HalfDepth * 2f - l.WallThickness),
                 new Opening("Upstairs road firing window", 1f, 4f, 0.85f, 2.3f));
-            Wall(a, "Upper field", true, -l.HalfWidth, -1, l.StoreyHeight, l.HalfDepth * 2f,
+            Wall(a, "Upper field", true, -l.HalfWidth, -1, l.StoreyHeight, (l.HalfDepth * 2f - l.WallThickness),
                 new Opening("Upstairs field window", 3f, 2.4f, 0.85f, 2.3f));
             foreach (int x in new[] { -1, 1 })
                 foreach (int z in new[] { -1, 1 })
                     Part(a, a.Trim, "Corner steel " + x + " " + z, a.Steel,
-                        new Vector3(x * (l.HalfWidth + 0.03f), l.StoreyHeight, z * (l.HalfDepth + 0.03f)),
+                        new Vector3(x * (l.HalfWidth + l.WallThickness * 0.5f - 0.02f), l.StoreyHeight, z * (l.HalfDepth + l.WallThickness * 0.5f - 0.02f)),
                         new Vector3(0.16f, l.EavesHeight, 0.16f));
         }
         static void Wall(Assembly a, string name, bool alongZ, float fixedAxis, int outside,
             float floor, float length, params Opening[] openings)
         {
+            var sections = new System.Collections.Generic.List<Bounds>();
             float cursor = -length * 0.5f;
             foreach (Opening o in openings)
             {
                 float left = o.Center - o.Width * 0.5f, right = o.Center + o.Width * 0.5f;
                 if (left < cursor || right > length * 0.5f) throw new InvalidOperationException("Overlapping wall openings: " + name);
-                Panel(a, name + " solid " + o.Name, alongZ, fixedAxis, cursor, left, floor, a.Layout.StoreyHeight);
-                if (o.Sill > 0f) Panel(a, o.Name + " sill", alongZ, fixedAxis, left, right, floor, o.Sill);
-                Panel(a, o.Name + " lintel", alongZ, fixedAxis, left, right, floor + o.Top, a.Layout.StoreyHeight - o.Top);
+                Panel(a, sections, name + " solid " + o.Name, alongZ, fixedAxis, cursor, left, floor, a.Layout.StoreyHeight);
+                if (o.Sill > 0f) Panel(a, sections, o.Name + " sill", alongZ, fixedAxis, left, right, floor, o.Sill);
+                Panel(a, sections, o.Name + " lintel", alongZ, fixedAxis, left, right, floor + o.Top, a.Layout.StoreyHeight - o.Top);
                 float outer = fixedAxis + outside * (a.Layout.WallThickness * 0.5f + 0.045f);
                 Frame(a, o.Name + " header", alongZ, outer, o.Center, floor + o.Top, o.Width + 0.18f, 0.10f);
                 if (o.Sill > 0f) Frame(a, o.Name + " ledge", alongZ, outer, o.Center, floor + o.Sill, o.Width + 0.18f, 0.10f);
@@ -133,19 +135,16 @@ namespace Harvest.Editor
                         floor + (o.Sill + o.Top) * 0.5f, 0.09f, o.Top - o.Sill);
                 cursor = right;
             }
-            Panel(a, name + " end", alongZ, fixedAxis, cursor, length * 0.5f, floor, a.Layout.StoreyHeight);
+            Panel(a, sections, name + " end", alongZ, fixedAxis, cursor, length * 0.5f, floor, a.Layout.StoreyHeight);
+            // Flat, touching sections share one facade mesh. No inset seams or per-panel UV resets.
+            Visual(a.Shell, name + " wall", FarmhouseMeshLibrary.Wall(name, sections), a.Plaster, Vector3.zero);
         }
-        static void Panel(Assembly a, string name, bool alongZ, float fixedAxis, float start, float end, float bottom, float height)
+        static void Panel(Assembly a, System.Collections.Generic.List<Bounds> sections, string name, bool alongZ, float fixedAxis, float start, float end, float bottom, float height)
         {
             if (end - start < 0.01f || height < 0.01f) return;
             Vector3 size = WallSize(alongZ, end - start, height, a.Layout.WallThickness);
             Solid(a, name, WallPosition(alongZ, fixedAxis, (start + end) * 0.5f, bottom + height * 0.5f), size);
-            int count = Mathf.CeilToInt((end - start) / 2.4f);
-            float span = (end - start) / count;
-            for (int i = 0; i < count; i++)
-                Part(a, a.Shell, name + " panel " + i, a.Plaster,
-                    WallPosition(alongZ, fixedAxis, start + (i + 0.5f) * span, bottom + height * 0.5f),
-                    WallSize(alongZ, span - 0.018f, height - 0.012f, a.Layout.WallThickness), 0.012f);
+            sections.Add(new Bounds(WallPosition(alongZ, fixedAxis, (start + end) * 0.5f, bottom + height * 0.5f), size));
         }
         static void Frame(Assembly a, string name, bool alongZ, float fixedAxis, float center, float y, float width, float height)
         { Part(a, a.Trim, name, a.Timber, WallPosition(alongZ, fixedAxis, center, y), WallSize(alongZ, width, height, 0.11f), 0.006f); }
@@ -231,7 +230,7 @@ namespace Harvest.Editor
                     new Vector3(0.10f, l.EavesHeight, 0.10f), 0.02f);
             }
             Part(a, a.Roof, "Ridge cap", a.Steel, new Vector3(0f, l.RidgeHeight + 0.16f, 0f), new Vector3(0.24f, 0.08f, depth));
-            Mesh gable = FarmhouseMeshLibrary.Gable(l.HalfWidth * 2f, l.RidgeHeight - l.EavesHeight, l.WallThickness);
+            Mesh gable = FarmhouseMeshLibrary.Gable(l.HalfWidth * 2f, l.RidgeHeight - l.EavesHeight, l.WallThickness, l.EavesHeight);
             foreach (int side in new[] { -1, 1 })
             {
                 Vector3 position = new Vector3(0f, l.EavesHeight, side * l.HalfDepth);

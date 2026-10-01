@@ -32,11 +32,11 @@ The farmhouse keeps the original footprint, floor spacing and road-facing firing
 - `Assets/Harvest/Materials/Farmhouse Foundation *.mat`: persistent stock URP Lit base materials. Existing edits survive generation. The PBR installer assigns scanned maps only while these materials have no authored maps. Existing maps and edited tint, smoothness, normal strength, occlusion strength and UV transforms survive rebuilds. See [MATERIAL_SOURCES.md](MATERIAL_SOURCES.md) for sources and review steps. Final lighting is still pending.
 - Hierarchy groups: `Shell`, `Roof`, `Porch`, `Interior`, `Trim`, `Collision`. Trim has no movement or bullet collision. Broad box/mesh collision is isolated in `Collision`, used by the existing navigation builder and footstep surface system. Preserve these groups and the `FarmhouseFoundation` marker in authored variants.
 
-`FarmhouseLayout` owns dimensions; `FarmhouseMeshLibrary` owns reusable topology/UV generation; `FarmhouseFoundationBuilder` owns assembly/material defaults; `FarmEncounterGeometry` owns placement within the larger encounter. Encounter logic and runtime actor behavior do not depend on the visual modules.
+`FarmhouseLayout` owns dimensions; `FarmhouseMeshLibrary` owns reusable topology/UV generation; `FarmhouseFoundationBuilder` owns assembly/material defaults; `FarmhousePlasterFinish` owns the optional reduced-repeat plaster bake; `FarmEncounterGeometry` owns placement within the larger encounter. Encounter logic and runtime actor behavior do not depend on the visual modules.
 
 ## Build and review
 
-1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 24 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
+1. Run **Harvest > Install Farmhouse PBR Materials** and wait for its completion message (about 156 MB on first use), then save manual scene edits before running **Harvest > Build The Line Prototype**. Scene version 25 replaces the earlier house and removes its duplicate legacy trim. Generated meshes and prefab are created by Unity; they cannot be pre-baked in this environment.
 2. Run **Harvest > Validate Farmhouse Foundation**. It checks prefab connection and persistent mesh ownership in Edit mode. Both modes check hierarchy/collision separation, finite geometry, triangle winding, UV channels, tangents, standing-body clearance, support under circulation points and firing sightlines. Play mode does not require editor prefab/asset ownership for the live objects.
 3. Enter Play mode, run the same menu to additionally check a complete marine NavMesh path from downstairs to the upstairs window.
 4. Walk the front and rear entrances, stairs in both directions, landing and upstairs firing approaches. Check standing/crouching and grenade behavior. The capsule checks allow adjacent traversable stair risers; they do not replace a real CharacterController traversal check.
@@ -47,7 +47,7 @@ Available here: source/API inspection and independent geometry/layout math check
 
 ## Material review
 
-Run **Harvest > Validate Farmhouse Materials**, then **Harvest > Build Farmhouse Material Review**. This creates an isolated neutral-light scene with five surfaces, metre-scaled panels/blocks and reflection spheres. Review scale, grain direction, normal intensity and roughness before returning to The Line. The scene is excluded from the game build. See [MATERIAL_SOURCES.md](MATERIAL_SOURCES.md).
+Run **Harvest > Refine Farmhouse Plaster** once after installation, then **Harvest > Build The Line Prototype** to rebuild version 25. Run **Harvest > Validate Farmhouse Materials**, then **Harvest > Build Farmhouse Material Review**. This creates an isolated neutral-light scene with five surfaces, metre-scaled panels/blocks and reflection spheres. Review scale, grain direction, normal intensity and roughness before returning to The Line. The scene is excluded from the game build. See [MATERIAL_SOURCES.md](MATERIAL_SOURCES.md).
 
 ## Subsequent work packages
 
@@ -60,3 +60,9 @@ Run **Harvest > Validate Farmhouse Materials**, then **Harvest > Build Farmhouse
 | Lighting | Stable geometry/UVs, baked bounce, moving-object probes, interior/exterior reflection coverage and practical lights | Readable room transitions, no leaks or floating characters, complete Editor and build review |
 
 Future agents should receive a single work package, owned paths, the approved concept references and these review criteria. Geometry and material work can split after dimensions are approved; final lighting follows stable geometry and materials. Integrate and review each package separately on `prototype/the-line`.
+
+## Continuous facade correction (version 25)
+
+Each storey/facade now uses one persistent wall mesh made from exact, un-inset wall sections around its openings. Removed the 18mm horizontal and 12mm vertical spacing between the old visual panels and their bevel grooves. Wall UV0 is projected from house-space vertex positions, keeping its phase continuous across sections and storeys; gable UVs include their eave-height offset. Front/rear walls extend through the corners while the side walls stop at their inner faces; the corner steel is positioned outside the plaster. Door/window dimensions are retained. Collision uses the same full wall sections as the visual geometry.
+
+The foundation validator additionally compares wall UVs to the house-space projection and tests rendered triangle coverage wherever the wall collision is solid, including samples near facade ends and the top/bottom edges. This check is for generated geometry; an explicitly assigned artist prefab retains its own authoring responsibility. Runtime/editor visual and traversal review are still required.

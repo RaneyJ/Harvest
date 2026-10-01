@@ -34,16 +34,22 @@ namespace Harvest.Editor
                     Require(!material.IsKeywordEnabled("_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A") &&
                         Mathf.Approximately(material.GetFloat("_SmoothnessTextureChannel"), 0f), source.Key + ": smoothness must use packed mask alpha.");
                 }
-                Debug.Log("Farmhouse material checks passed: 15 verified sources, 2K import settings, sampled packed-mask channels and URP material wiring. Review GPU appearance in the neutral scene and encounter next.");
+                if (File.Exists(FarmhousePlasterFinish.TexturePath("Albedo.png")))
+                {
+                    CheckTexture("PlasterFinish", "Albedo.png", true, false, FarmhousePlasterFinish.Resolution);
+                    CheckTexture("PlasterFinish", "NormalGL.png", false, true, FarmhousePlasterFinish.Resolution);
+                    CheckTexture("PlasterFinish", "URP_Mask.png", false, false, FarmhousePlasterFinish.Resolution);
+                }
+                Debug.Log("Farmhouse material checks passed: 15 verified sources, 2K source/optional 4K finish import settings, sampled packed-mask channels and URP material wiring. Review GPU appearance in the neutral scene and encounter next.");
             }
             catch (Exception error) { Debug.LogError("Farmhouse material check failed: " + error.Message); }
         }
-        static void CheckTexture(string key, string file, bool color, bool normal)
+        static void CheckTexture(string key, string file, bool color, bool normal, int resolution = 2048)
         {
             string path = FarmhouseMaterialLibrary.TexturePath(key, file);
             var texture = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
-            Require(texture != null && importer != null && texture.width == 2048 && texture.height == 2048, key + ": missing/non-2K " + file);
+            Require(texture != null && importer != null && texture.width == resolution && texture.height == resolution, key + ": missing/wrong resolution for " + file);
             Require(importer.sRGBTexture == color && importer.textureType == (normal ? TextureImporterType.NormalMap : TextureImporterType.Default), key + ": incorrect color space/type for " + file);
             Require(!normal || !importer.flipGreenChannel, key + ": OpenGL normal Y channel was flipped.");
             Require(importer.mipmapEnabled && importer.wrapMode == TextureWrapMode.Repeat && importer.anisoLevel >= 8 &&

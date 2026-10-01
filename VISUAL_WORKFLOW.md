@@ -5,7 +5,7 @@ The Line now targets Unity 6000.3 / URP 17.3 with Render Graph enabled and linea
 ## Pull and rebuild
 
 1. Let Unity Package Manager resolve URP after pulling `prototype/the-line`.
-2. Run **Harvest > Install Farmhouse PBR Materials** and wait for completion, then save manual scene changes and run **Harvest > Build The Line Prototype**. Version 24 rebuilds the generated scene with aligned roof UVs and applies installed PBR maps to untouched farmhouse base materials. Persistent rendering assets and existing material tuning are retained. Weapon tuning, audio and configured waves remain on their existing assets.
+2. Run **Harvest > Install Farmhouse PBR Materials** and wait for completion, then save manual scene changes and run **Harvest > Build The Line Prototype**. Version 25 rebuilds continuous farmhouse wall meshes with closed joins and house-space UVs, retaining the roof UV alignment. Installed PBR maps are applied only to untouched base materials. Persistent rendering assets and existing material tuning are retained. Weapon tuning, audio and configured waves remain on their existing assets.
 3. Run **Harvest > Validate Visual Foundation**. Check the Console for shader errors.
 4. In Play mode inspect farmhouse interiors, shadows, rifle tracers, plasma, grenade fading, armor/charge tint feedback and sustained-fire suppression. Also check upstairs movement, cover and all waves. The build environment used for this change has no Unity Editor; these runtime and visual checks still need to be run in Unity.
 
@@ -58,3 +58,9 @@ The approved courtyard, exterior and interior concepts now guide a dimensioned m
 ## Farmhouse surface pass (version 24)
 
 `FarmhouseMaterialLibrary` owns the pinned CC0 source installation and URP channel packing. `FarmhouseMaterialSources.json` records URLs, authors, physical tile sizes, byte counts, provider MD5 and independently calculated SHA-256. The installer downloads to a resumable verified cache, imports 2K albedo/normal maps and creates linear packed masks. `FarmhouseMaterialChecks` validates the inputs and output wiring. `FarmhouseMaterialReview` builds a separate neutral-light review scene without gameplay scripts or post-processing. Existing artist maps are preserved. Run the material validation and inspect the review scene before approving the encounter lighting. Unity compilation/import and GPU appearance remain unverified in this development environment.
+
+## Facade continuity and plaster variation (version 25)
+
+After pulling, run **Harvest > Refine Farmhouse Plaster** once, then **Harvest > Build The Line Prototype**. The refinement uses the existing verified plaster cache; no additional download is required. Its editor bake creates three 4K maps over a 4m physical tile by blending phase-shifted source samples with a periodic, smoothly interpolated pattern. Albedo blends in linear color space, tangent normals are renormalized and packed material channels use the same sample coordinates and weights. It adds no runtime shader feature or additional texture sample. The larger maps use more texture memory and have about 1024 pixels/metre at default scale, versus the original scan's 2048 pixels/metre. Review close-up detail as well as repeated patterns.
+
+Only materials still using the exact original installed plaster maps are upgraded. Authored maps/tint/roughness tuning remain intact. Refined maps and the adjusted material transform persist across rebuilds. Review the neutral scene and wall joins in The Line, then run both material and farmhouse foundation validation. There is no Unity Editor available in the development environment, so Unity bake performance, GPU appearance and traversal remain to be checked locally.

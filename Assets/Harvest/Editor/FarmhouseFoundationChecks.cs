@@ -14,7 +14,7 @@ namespace Harvest.Editor
             try
             {
                 var house = UnityEngine.Object.FindFirstObjectByType<FarmhouseFoundation>();
-                Require(house != null, "Rebuild The Line (version 23) before checking the farmhouse.");
+                Require(house != null, "Rebuild The Line (version 25) before checking the farmhouse.");
                 FarmhouseLayout l = house.Layout;
                 FarmhouseFoundationBuilder.ValidateLayout(l);
                 // Prefab connections and asset ownership are authoring checks, not runtime prerequisites.
@@ -36,6 +36,7 @@ namespace Harvest.Editor
                     if (checkedMeshes.Add(mesh)) CheckMesh(mesh);
                 }
                 Physics.SyncTransforms();
+                if (l.AuthoredPrefab == null) CheckWallSurfaces(house);
                 foreach (Vector3 feet in new[] {
                     new Vector3(0f,l.GroundFloorTop,-l.HalfDepth-1.3f),
                     new Vector3(0f,l.GroundFloorTop,-l.HalfDepth+0.6f),
@@ -55,7 +56,7 @@ namespace Harvest.Editor
                 CheckSightline(house, new Vector3(1f,l.UpperFloorTop+1.6f,-l.HalfDepth+0.9f),
                     new Vector3(1f,l.UpperFloorTop+1.6f,-l.HalfDepth-2f));
                 if (Application.isPlaying) CheckNavigation(house);
-                Debug.Log("Farmhouse foundation checks passed: mesh geometry/UVs, hierarchy groups, collision separation, 1.9m body clearance, stairs and firing windows" +
+                Debug.Log("Farmhouse foundation checks passed: mesh geometry/UVs, generated wall coverage/UV continuity, hierarchy groups, collision separation, 1.9m body clearance, stairs and firing windows" +
                     (Application.isPlaying ? ", and downstairs-to-upstairs marine navigation." : ", persistent mesh assets and prefab connection. Run again in Play mode to also check marine navigation."));
             }
             catch (Exception error) { Debug.LogError("Farmhouse foundation check failed: " + error.Message); }
@@ -82,6 +83,65 @@ namespace Harvest.Editor
                 Require(cross.sqrMagnitude > 1e-12f && Vector3.Dot(cross.normalized, normals[indices[i]]) > 0.95f,
                     "Degenerate or inverted triangle: " + mesh.name);
             }
+        }
+        static void CheckWallSurfaces(FarmhouseFoundation house)
+        {
+            FarmhouseLayout l = house.Layout;
+            var colliders = house.GetComponentsInChildren<BoxCollider>();
+            foreach (string level in new[] { "Ground", "Upper" }) foreach (string side in new[] { "front", "rear", "road", "field" })
+            {
+                string name = level + " " + side + " wall";
+                Transform wall = house.transform.Find("Shell/" + name);
+                Require(wall != null, "Missing continuous facade: " + name + ". Rebuild version 25.");
+                Require(wall.localPosition == Vector3.zero && wall.localRotation == Quaternion.identity, "Facade mesh must stay in house space: " + name);
+                Mesh mesh = wall.GetComponent<MeshFilter>().sharedMesh;
+                Vector3[] vertices = mesh.vertices, normals = mesh.normals; Vector2[] uv = mesh.uv;
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    Vector3 seed = Mathf.Abs(normals[i].y) < 0.95f ? Vector3.up : Vector3.forward;
+                    Vector3 tangent = Vector3.Cross(seed, normals[i]).normalized;
+                    Vector3 bitangent = Vector3.Cross(normals[i], tangent);
+                    Vector2 expected = new Vector2(Vector3.Dot(vertices[i], tangent), Vector3.Dot(vertices[i], bitangent));
+                    Require((uv[i] - expected).sqrMagnitude < 1e-8f, "Wall UV resets instead of continuing in house space: " + name);
+                }
+                bool alongZ = side == "road" || side == "field";
+                int axis = alongZ ? 0 : 2, sign = side == "front" || side == "field" ? -1 : 1;
+                float fixedAxis = sign * (alongZ ? l.HalfWidth : l.HalfDepth);
+                float floor = level == "Ground" ? 0f : l.StoreyHeight;
+                float length = alongZ ? l.HalfDepth * 2f - l.WallThickness : l.HalfWidth * 2f + l.WallThickness;
+                Vector3 outward = Vector3.zero; outward[axis] = sign;
+                int[] triangles = mesh.triangles;
+                // Near the top/bottom and wall ends catches the former inset strips; the grid covers surrounds.
+                for (int x = 0; x <= 40; x++) foreach (float y in new[] { 0.002f, 0.25f * l.StoreyHeight, 0.5f * l.StoreyHeight, 0.75f * l.StoreyHeight, l.StoreyHeight - 0.002f })
+                {
+                    float run = Mathf.Lerp(-length * 0.5f + 0.002f, length * 0.5f - 0.002f, x / 40f);
+                    Vector3 point = alongZ ? new Vector3(fixedAxis, floor + y, run) : new Vector3(run, floor + y, fixedAxis);
+                    bool solid = false;
+                    foreach (BoxCollider collider in colliders)
+                    {
+                        if (!Mathf.Approximately(collider.size[axis], l.WallThickness) ||
+                            Mathf.Abs(collider.transform.localPosition[axis] - fixedAxis) > 0.001f) continue;
+                        Vector3 local = collider.transform.InverseTransformPoint(house.transform.TransformPoint(point));
+                        if (new Bounds(collider.center, collider.size).Contains(local)) { solid = true; break; }
+                    }
+                    if (!solid) continue; // Windows and entrances remain genuinely open.
+                    Vector3 origin = point + outward * (l.WallThickness * 0.5f + 0.02f);
+                    bool covered = false;
+                    for (int t = 0; t < triangles.Length && !covered; t += 3)
+                        covered = RayTriangle(origin, -outward, vertices[triangles[t]], vertices[triangles[t+1]], vertices[triangles[t+2]], l.WallThickness + 0.04f);
+                    Require(covered, "Rendered wall gap despite solid collision: " + name + " at " + point);
+                }
+            }
+        }
+        static bool RayTriangle(Vector3 origin, Vector3 direction, Vector3 a, Vector3 b, Vector3 c, float length)
+        {
+            Vector3 e1 = b - a, e2 = c - a, p = Vector3.Cross(direction, e2);
+            float determinant = Vector3.Dot(e1, p); if (Mathf.Abs(determinant) < 1e-8f) return false;
+            float inverse = 1f / determinant; Vector3 delta = origin - a;
+            float u = Vector3.Dot(delta, p) * inverse; if (u < -1e-5f || u > 1f + 1e-5f) return false;
+            Vector3 q = Vector3.Cross(delta, e1); float v = Vector3.Dot(direction, q) * inverse;
+            if (v < -1e-5f || u + v > 1f + 1e-5f) return false;
+            float distance = Vector3.Dot(e2, q) * inverse; return distance >= 0f && distance <= length;
         }
         static void CheckBody(FarmhouseFoundation house, Vector3 localFeet, float allowedStep)
         {

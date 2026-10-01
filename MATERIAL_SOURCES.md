@@ -45,3 +45,13 @@ Review approval should be based on the neutral scene **and** the encounter. This
 The mask's unused blue channel is zero. Smoothness uses the metallic mask alpha, with the untouched base material's old constant replaced by a multiplier of 1. Albedo alpha is not used for smoothness. Normal and occlusion strengths are deliberately restrained per surface.
 
 Generated farmhouse UV0 is in metres. The material's shared Base Map tiling is `1 / physical tile width` by `1 / physical tile height`; URP Lit applies that UV transform to its PBR maps. Lightmap UV2 remains separately packed. A sphere's primitive UVs are useful for reflections, but the dimensioned blocks and panels are the scale references. Authored meshes and prefab variants need their own UV review.
+
+## Reduced-repeat plaster finish (version 25)
+
+The approved plaster scan remains the source. **Harvest > Refine Farmhouse Plaster** derives a seamless 4m tile at 4096 × 4096 rather than visibly repeating a 1m patch across the house. Sixteen deterministic source phase offsets are blended with periodic smooth weights; all three maps use identical coordinates. Color blending is linear, normals are renormalized, and the packed mask stays linear. No new shader or runtime blending pass is introduced. This is surface variation, not localized battle damage.
+
+- Run refinement once after installation, then rebuild The Line. Baking can take time; the progress window supports cancellation. All maps are staged in the source cache before the final asset files are copied. Cancellation during baking leaves the current material intact.
+- Output: `Assets/Harvest/Art/Surfaces/PolyHaven/PlasterFinish/{Albedo.png,NormalGL.png,URP_Mask.png}`. Existing complete output sets are reused; partial sets are reported instead of silently overwritten. Move that generated folder aside to deliberately rebake.
+- Only the exact original installer map combination on the plaster material is upgraded. Relative density/phase is retained by dividing its Base Map scale and offset by four. Other material settings are preserved. Artist-owned replacements are skipped.
+- The output uses 4K import settings and approximately 1024 pixels/metre at default density. Compare close-up grain with the original if needed; the goal is less repetition with a bounded texture size. The original source maps remain available for comparison.
+- **Validate Farmhouse Materials** also checks the derived map import settings. The material review scene labels the derived tile as a 4m finish. Inspect wall joins and the plaster finish in both scenes before considering this correction approved.

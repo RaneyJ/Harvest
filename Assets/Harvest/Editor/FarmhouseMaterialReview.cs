@@ -69,7 +69,8 @@ namespace Harvest.Editor
                     sphere.GetComponent<Renderer>().sharedMaterial = material;
                     UnityEngine.Object.DestroyImmediate(sphere.GetComponent<Collider>());
                     var label = new GameObject(source.Key + " label").AddComponent<TextMesh>();
-                    label.text = source.Key + "\n" + source.WidthMeters.ToString("0.##") + "m tile";
+                    bool finish = source.Key == "Plaster" && AssetDatabase.GetAssetPath(material.GetTexture("_BaseMap")) == FarmhousePlasterFinish.TexturePath("Albedo.png");
+                    label.text = source.Key + "\n" + (finish ? "4m finish" : source.WidthMeters.ToString("0.##") + "m tile");
                     label.transform.position = new Vector3(x, 2.7f, 0f);
                     label.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
                     label.GetComponent<Renderer>().sharedMaterial = label.font.material;

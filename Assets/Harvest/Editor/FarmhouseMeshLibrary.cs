@@ -70,14 +70,39 @@ namespace Harvest.Editor
                 for (int i = 0; i < data.UV.Count; i++) data.UV[i] = new Vector2(-data.UV[i].y, data.UV[i].x);
             return Save(key, data);
         }
-        public static Mesh Gable(float width, float height, float thickness)
+        // Positions are baked in house space so both storeys and opening surrounds share UV phase.
+        public static Mesh Wall(string name, IReadOnlyList<Bounds> sections)
         {
-            string key = "Gable_" + Number(width) + "_" + Number(height) + "_" + Number(thickness);
+            string key = "Wall_" + name.Replace(" ", "_");
+            if (Cache.TryGetValue(key, out Mesh cached)) return cached;
+            var data = new Geometry();
+            foreach (Bounds section in sections)
+            {
+                Vector3 h = section.extents;
+                for (int axis = 0; axis < 3; axis++) foreach (int sign in new[] { -1, 1 })
+                {
+                    int a = (axis + 1) % 3, b = (axis + 2) % 3;
+                    Vector3 normal = Vector3.zero; normal[axis] = sign;
+                    var points = new Vector3[4];
+                    int[] sa = { -1, 1, 1, -1 }, sb = { -1, -1, 1, 1 };
+                    for (int i = 0; i < 4; i++)
+                    {
+                        points[i][axis] = sign * h[axis]; points[i][a] = sa[i] * h[a]; points[i][b] = sb[i] * h[b];
+                        points[i] += section.center;
+                    }
+                    data.Face(normal, points);
+                }
+            }
+            return Save(key, data);
+        }
+        public static Mesh Gable(float width, float height, float thickness, float uvHeight = 0f)
+        {
+            string key = "Gable_" + Number(width) + "_" + Number(height) + "_" + Number(thickness) + "_UVHeight_" + Number(uvHeight);
             if (Cache.TryGetValue(key, out Mesh cached)) return cached;
             float w = width * 0.5f, d = thickness * 0.5f;
             Vector3[] front = { new Vector3(-w,0f,-d), new Vector3(w,0f,-d), new Vector3(0f,height,-d) };
             Vector3[] back = { new Vector3(-w,0f,d), new Vector3(w,0f,d), new Vector3(0f,height,d) };
-            var data = new Geometry();
+            var data = new Geometry(Vector3.up * uvHeight);
             data.Face(Vector3.back, front); data.Face(Vector3.forward, back);
             for (int i = 0; i < 3; i++)
             {
@@ -106,6 +131,8 @@ namespace Harvest.Editor
         }
         sealed class Geometry
         {
+            readonly Vector3 uvOrigin;
+            public Geometry(Vector3 uvOrigin = default) { this.uvOrigin = uvOrigin; }
             public readonly List<Vector3> Vertices = new List<Vector3>();
             public readonly List<Vector3> Normals = new List<Vector3>();
             public readonly List<Vector2> UV = new List<Vector2>();
@@ -120,7 +147,7 @@ namespace Harvest.Editor
                 Vector3 bitangent = Vector3.Cross(normal, tangent);
                 int first = Vertices.Count;
                 foreach (Vector3 point in points)
-                { Vertices.Add(point); Normals.Add(normal); UV.Add(new Vector2(Vector3.Dot(point, tangent), Vector3.Dot(point, bitangent))); }
+                { Vertices.Add(point); Normals.Add(normal); UV.Add(new Vector2(Vector3.Dot(point + uvOrigin, tangent), Vector3.Dot(point + uvOrigin, bitangent))); }
                 for (int i = 1; i < points.Length - 1; i++)
                 { Triangles.Add(first); Triangles.Add(first + i); Triangles.Add(first + i + 1); }
             }

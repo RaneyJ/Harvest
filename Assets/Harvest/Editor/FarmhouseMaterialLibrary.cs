@@ -201,7 +201,7 @@ namespace Harvest.Editor
         }
         static void RequireResolution(Texture2D image, int size)
         { if (image.width != size || image.height != size) throw new InvalidOperationException("Source texture resolution differs from its manifest."); }
-        static void ConfigureTexture(string path, bool color, bool normal)
+        public static void ConfigureTexture(string path, bool color, bool normal, int resolution = 2048)
         {
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceSynchronousImport);
             var importer = (TextureImporter)AssetImporter.GetAtPath(path);
@@ -210,7 +210,7 @@ namespace Harvest.Editor
             importer.alphaSource = TextureImporterAlphaSource.FromInput;
             importer.alphaIsTransparency = false; importer.isReadable = false;
             importer.mipmapEnabled = true; importer.wrapMode = TextureWrapMode.Repeat;
-            importer.filterMode = FilterMode.Trilinear; importer.anisoLevel = 8; importer.maxTextureSize = 2048;
+            importer.filterMode = FilterMode.Trilinear; importer.anisoLevel = 8; importer.maxTextureSize = resolution;
             importer.textureCompression = TextureImporterCompression.CompressedHQ;
             importer.SaveAndReimport();
         }

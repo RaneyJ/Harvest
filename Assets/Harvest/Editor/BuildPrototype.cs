@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "24";
+        const string SceneVersion = "25";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the farmhouse PBR material pass. Install Farmhouse PBR Materials from the Harvest menu, then rebuild The Line for roof texture alignment. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
+                    "This scene predates the continuous farmhouse walls. Rebuild The Line to close panel gaps and align wall textures. Run Refine Farmhouse Plaster for the reduced-repeat finish. Save any manual scene edits before continuing; existing tuning and configured waves are preserved.",
                     "Rebuild scene", "Later"))
                     Build();
             };
