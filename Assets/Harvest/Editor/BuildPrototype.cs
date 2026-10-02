@@ -11,7 +11,7 @@ namespace Harvest.Editor
     {
         const string ScenePath = "Assets/Harvest/Scenes/TheLine.unity";
         const string SceneVersionPath = "Assets/Harvest/Scenes/TheLineVersion.txt";
-        const string SceneVersion = "39";
+        const string SceneVersion = "40";
         const string EncounterPath = "Assets/Harvest/Data/The Line.asset";
 
         [InitializeOnLoadMethod]
@@ -30,7 +30,7 @@ namespace Harvest.Editor
                 bool currentScene = File.Exists(SceneVersionPath) && File.ReadAllText(SceneVersionPath).Trim() == SceneVersion;
                 if (currentScene && data != null && data.Waves != null && data.Waves.Length > 0 && sceneReferencesData) return;
                 if (EditorUtility.DisplayDialog("Update The Line prototype",
-                    "This scene predates the natural ground pass. Rebuild The Line for continuous gravel, blended irregular shoulders, the softened access junction and field contours. Save manual edits first. Bake lighting and reflections after rebuilding.",
+                    "This scene predates the checkpoint and forecourt pass. Rebuild The Line for detailed ground textures, dressed concrete barricades and the farmhouse parking yard. Save manual edits first. Bake lighting and reflections after rebuilding.",
                     "Rebuild scene", "Later"))
                     Build();
             };
@@ -62,6 +62,8 @@ namespace Harvest.Editor
             Material beacon = MakeMaterial("Evac Beacon", new Color(0.17f, 0.9f, 0.35f), true);
 
             HarvestSurfaceLibrary.Apply();
+            FarmGroundTextures.Apply();
+            FarmGroundScans.ApplyPacked();
             FarmEncounterGeometry.Build(soil, road, grain, concrete, rust);
             FarmDetailGeometry.Build();
             FarmyardPolish.Build();
@@ -83,6 +85,7 @@ namespace Harvest.Editor
             Block("Burned freight car", rust, new Vector3(-13, 2, 38), new Vector3(5, 4, 12));
 
             FarmyardComposition.Build();
+            CheckpointArt.Build();
 
             GameObject evacuation = Block("Evacuation pad", concrete, new Vector3(0, 0.08f, -33), new Vector3(10, 0.16f, 8));
             Block("Evac beacon", beacon, new Vector3(0, 2.7f, -36), new Vector3(0.32f, 5.2f, 0.32f));
@@ -222,6 +225,7 @@ namespace Harvest.Editor
             AssetDatabase.Refresh();
             Selection.activeObject = AssetDatabase.LoadAssetAtPath<SceneAsset>(ScenePath);
             Debug.Log("The Line prototype is ready. Press Play, click the Game view, and hold the road.");
+            FarmGroundScans.InstallIfMissing();
         }
 
         static WeaponDefinition MakeWeapon(string assetName, string displayName, int magazine, int reserve,

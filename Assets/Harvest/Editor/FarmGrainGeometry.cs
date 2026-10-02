@@ -56,6 +56,7 @@ namespace Harvest.Editor
                 for(int row=first;row<Mathf.Min(first+7,26);row++) for(int column=0;column<9;column++)
                 {
                     float x=side*(10.5f+column*2),z=-44+row*4.5f;
+                    if(FarmNaturalGround.IsYard(x,z))continue;
                     if(side<0 && z>-16 && z<10) continue;
                     if(side<0 && x>-17 && z>30 && z<46) continue;
                     if(side<0 && x<-18 && z>14 && z<24) continue;

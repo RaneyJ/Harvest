@@ -86,6 +86,23 @@ namespace Harvest.Editor
                 }
                 for(int row=0;row<38;row++)for(int band=0;band<3;band++) TrackCell(t,first+row*4+band,4,true);
             }
+            Vector2 yard=FarmNaturalGround.YardCentre;
+            foreach(float bay in new[]{-5.6f,-2.6f})foreach(float wheel in new[]{-.68f,.68f})
+            {
+                int first=v.Count;
+                for(int row=0;row<=20;row++)
+                {
+                    float z=yard.y-4+row*.25f,x=yard.x+bay+wheel;
+                    float pressure=.30f*Mathf.Sin(row*Mathf.PI/20);
+                    for(int band=0;band<4;band++)
+                    {
+                        float px=x+(band==0?-.18f:band==1?-.11f:band==2?.11f:.18f);
+                        v.Add(new Vector3(px,FarmNaturalGround.SurfaceHeight(px,z)+.002f,z));
+                        colors.Add(new Color(band==0||band==3?1:1-pressure,FarmNaturalGround.SurfaceVariation(px,z),0,1));
+                    }
+                }
+                for(int row=0;row<20;row++)for(int band=0;band<3;band++)TrackCell(t,first+row*4+band,4);
+            }
             Save(root,"Road and access tyre wear",v,t,material,colors);
         }
         static void TrackCell(List<int> t,int a,int columns,bool flip=false)
@@ -130,6 +147,7 @@ namespace Harvest.Editor
         }
         static bool Clear(float x,float z,FarmhouseLayout l)
         {
+            if(FarmNaturalGround.IsYard(x,z))return false;
             Vector3 p=new Vector3(x,0,z)-l.WorldOrigin;
             if(Mathf.Abs(p.x)<l.HalfWidth+.8f && p.z>-l.HalfDepth-l.PorchDepth-1 && p.z<l.HalfDepth+2.2f) return false;
             if(x>-17.4f && x<-6.6f && z>-14.4f && z<-9.6f) return false;
@@ -144,6 +162,7 @@ namespace Harvest.Editor
             Color tint=road.GetColor("_BaseColor");material.SetColor("_BaseColor",new Color(tint.r*.86f,tint.g*.86f,tint.b*.86f,tint.a));
             material.SetTexture("_GroundMap",road.GetTexture("_SurfaceMap"));material.SetColor("_GroundTint",tint);
             material.SetFloat("_GroundScale",road.GetFloat("_WorldScale"));material.SetFloat("_GroundSmoothness",road.GetFloat("_Smoothness"));
+            material.SetFloat("_GroundReliefStrength",road.GetFloat("_ReliefStrength"));
             AssetDatabase.CreateAsset(material,path);return material;
         }
         static void Validate(GameObject prefab)

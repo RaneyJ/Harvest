@@ -12,6 +12,9 @@ Shader "Harvest/Farm Surface"
         _GroundSmoothness ("Ground smoothness", Range(0,1)) = 0.06
         _GroundBlendEnabled ("Enable vertex ground blend", Float) = 0
         _VertexTintStrength ("Vertex ground variation", Range(0,1)) = 0
+        _ReliefStrength ("Primary height relief in meters", Range(0,0.05)) = 0
+        _GroundReliefStrength ("Ground height relief in meters", Range(0,0.05)) = 0
+        [HideInInspector] _GroundArtRevision ("Ground art revision", Float) = 0
         _Smoothness ("Smoothness", Range(0,1)) = 0.15
         _Metallic ("Metallic", Range(0,1)) = 0
         _Cutoff ("Cutoff", Range(0,1)) = 0.5
@@ -34,6 +37,9 @@ Shader "Harvest/Farm Surface"
                 half _GroundSmoothness;
                 half _GroundBlendEnabled;
                 half _VertexTintStrength;
+                half _ReliefStrength;
+                half _GroundReliefStrength;
+                half _GroundArtRevision;
                 half _Smoothness;
                 half _Metallic;
                 half _Cutoff;
@@ -87,6 +93,7 @@ Shader "Harvest/Farm Surface"
                 half4 sampledSurface = SAMPLE_TEXTURE2D(_SurfaceMap, sampler_SurfaceMap, p.zy) * weights.x;
                 sampledSurface += SAMPLE_TEXTURE2D(_SurfaceMap, sampler_SurfaceMap, p.xz) * weights.y;
                 sampledSurface += SAMPLE_TEXTURE2D(_SurfaceMap, sampler_SurfaceMap, p.xy) * weights.z;
+                float relief = sampledSurface.a * _ReliefStrength;
                 SurfaceData surface = (SurfaceData)0;
                 surface.albedo = sampledSurface.rgb * _BaseColor.rgb;
                 surface.metallic = _Metallic;
@@ -101,6 +108,7 @@ Shader "Harvest/Farm Surface"
                     ground += SAMPLE_TEXTURE2D(_GroundMap, sampler_GroundMap, g.xy) * weights.z;
                     half blend = saturate(input.groundColor.r);
                     surface.albedo = lerp(surface.albedo, ground.rgb * _GroundTint.rgb, blend);
+                    relief = lerp(relief, ground.a * _GroundReliefStrength, blend);
                     surface.smoothness = lerp(surface.smoothness, _GroundSmoothness * lerp(0.55, 1.15, ground.a), blend);
                 }
                 if (_VertexTintStrength > 0.001)
@@ -108,6 +116,16 @@ Shader "Harvest/Farm Surface"
                 surface.normalTS = half3(0,0,1);
                 surface.occlusion = 1;
                 surface.alpha = 1;
+                if (_ReliefStrength > 0.0 || _GroundReliefStrength > 0.0)
+                {
+                    // Screen derivatives turn the packed scalar height into a world-space gradient.
+                    float3 dx = ddx(input.positionWS), dy = ddy(input.positionWS);
+                    float3 r1 = cross(dy, normal), r2 = cross(normal, dx);
+                    float determinant = dot(dx, r1);
+                    float3 gradient = sign(determinant) * (ddx(relief) * r1 + ddy(relief) * r2) / max(abs(determinant), 0.000001);
+                    gradient *= min(1.0, 0.65 / max(length(gradient), 0.0001));
+                    normal = normalize(normal - gradient);
+                }
                 InputData lighting = (InputData)0;
                 lighting.positionWS = input.positionWS;
                 lighting.normalWS = normal;

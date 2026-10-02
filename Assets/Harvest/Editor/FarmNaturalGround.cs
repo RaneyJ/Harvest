@@ -11,6 +11,8 @@ namespace Harvest.Editor
     public static class FarmNaturalGround
     {
         static Vector3[] roadSamples;
+        public static Vector2 YardCentre { get; private set; } = new Vector2(-19.8f,-16.8f);
+        static readonly Vector2 YardHalf=new Vector2(7.4f,5.2f);
         static Rect housePad = Rect.MinMaxRect(-29, -19, -10, 12);
         static readonly Rect[] Pads = {
             Rect.MinMaxRect(-29,13,-18,25), Rect.MinMaxRect(18,40,29,54),
@@ -25,14 +27,18 @@ namespace Harvest.Editor
         {
             roadSamples=null; ConfigureLayout();
             Terrain(soil); Road(BlendMaterial("Natural freight gravel", road, soil));
+            Yard(BlendMaterial("Natural farmyard gravel",road,soil));
             Access(BlendMaterial("Natural farm access gravel", road, soil));
         }
         static void ConfigureLayout()
         {
             var layout = AssetDatabase.LoadAssetAtPath<FarmhouseLayout>(FarmhouseFoundationBuilder.LayoutPath);
             if (layout != null)
+            {
+                YardCentre=new Vector2(layout.WorldOrigin.x-.8f,layout.WorldOrigin.z-layout.HalfDepth-layout.PorchDepth-5.2f);
                 housePad = Rect.MinMaxRect(layout.WorldOrigin.x-layout.HalfWidth-4, layout.WorldOrigin.z-layout.HalfDepth-layout.PorchDepth-7,
                     layout.WorldOrigin.x+layout.HalfWidth+3, layout.WorldOrigin.z+layout.HalfDepth+7);
+            }
         }
 
         [MenuItem("Harvest/Validate Natural Ground")]
@@ -44,7 +50,7 @@ namespace Harvest.Editor
                 Shader shader=Shader.Find("Harvest/Farm Surface");
                 Require(shader!=null&&shader.isSupported&&!ShaderUtil.ShaderHasError(shader),"Ground shader is missing or failed to compile.");
                 Physics.SyncTransforms();
-                foreach(string name in new[]{"Farm terrain","Freight road","Farm access track"})
+                foreach(string name in new[]{"Farm terrain","Freight road","Farm access track","Farmyard parking apron"})
                 {
                     GameObject go=GameObject.Find(name);Require(go!=null,"Rebuild The Line: missing "+name);
                     MeshFilter filter=go.GetComponent<MeshFilter>();MeshCollider collider=go.GetComponent<MeshCollider>();
@@ -63,6 +69,9 @@ namespace Harvest.Editor
                 for(int z=-45;z<=65;z+=10)foreach(float x in new[]{-5f,0,5f})CheckSample(road,x,z,.04f);
                 MeshCollider access=GameObject.Find("Farm access track").GetComponent<MeshCollider>();
                 foreach(float x in new[]{-16f,-12f,-9f,-7.05f})CheckSample(access,x,-12,SurfaceHeight(x,-12));
+                MeshCollider yard=GameObject.Find("Farmyard parking apron").GetComponent<MeshCollider>();
+                foreach(Vector2 offset in new[]{Vector2.zero,new Vector2(-5.6f,2.8f),new Vector2(-2.6f,2.8f),new Vector2(5,0),new Vector2(0,-4.5f)})
+                    CheckSample(yard,YardCentre.x+offset.x,YardCentre.y+offset.y,YardHeight(YardCentre.x+offset.x,YardCentre.y+offset.y));
                 foreach(Rect pad in Pads)Require(Mathf.Abs(TerrainHeight(pad.center.x,pad.center.y)+.05f)<.001f,"Heavy prop pad has moved.");
                 Debug.Log("Natural ground checks passed. Inspect shoulder blending, crop contact and the access junction in Game view, then run the farmhouse Play mode/navigation checks.");
             }
@@ -84,6 +93,7 @@ namespace Harvest.Editor
         static float RawHeight(float x, float z)
         {
             float level = PadWeight(housePad, x, z);
+            level=Mathf.Min(level,PadWeight(Rect.MinMaxRect(YardCentre.x-YardHalf.x-1,YardCentre.y-YardHalf.y-1,YardCentre.x+YardHalf.x+1,YardCentre.y+YardHalf.y+1),x,z));
             foreach (Rect pad in Pads) level = Mathf.Min(level, PadWeight(pad, x, z));
             // Fence footings and freight road stay at their established grade.
             level *= Smooth(.9f, 2.4f, Mathf.Abs(Mathf.Abs(x)-30));
@@ -188,6 +198,40 @@ namespace Harvest.Editor
             float w=1-u-v;height=a.y*u+b.y*v+c.y*w;
             return u>=-.00001f&&v>=-.00001f&&w>=-.00001f;
         }
+        static float YardDistance(float x,float z)
+        {
+            Vector2 q=new Vector2(Mathf.Abs(x-YardCentre.x)-YardHalf.x+1.5f,Mathf.Abs(z-YardCentre.y)-YardHalf.y+1.5f);
+            return new Vector2(Mathf.Max(q.x,0),Mathf.Max(q.y,0)).magnitude+Mathf.Min(Mathf.Max(q.x,q.y),0)-1.5f;
+        }
+        public static bool IsYard(float x,float z) => YardDistance(x,z)<1.25f;
+        static float YardCoverage(float x,float z) => 1-Smooth(-.10f,.95f,YardDistance(x,z)+(Noise(x,z,.21f,67)-.5f)*.12f);
+        static float YardPointHeight(float x,float z) => Mathf.Lerp(RoadHeight(x,z),.025f,YardCoverage(x,z));
+        static float YardHeight(float x,float z)
+        {
+            if(!IsYard(x,z))return RoadHeight(x,z);
+            float x0=YardCentre.x+Mathf.Floor((x-YardCentre.x)*2)*.5f,z0=YardCentre.y+Mathf.Floor((z-YardCentre.y)*2)*.5f;
+            float u=(x-x0)*2,v=(z-z0)*2;
+            float a=YardPointHeight(x0,z0),b=YardPointHeight(x0+.5f,z0),c=YardPointHeight(x0,z0+.5f),d=YardPointHeight(x0+.5f,z0+.5f);
+            return u+v<=1?a+(b-a)*u+(c-a)*v:d+(c-d)*(1-u)+(b-d)*(1-v);
+        }
+        static void Yard(Material material)
+        {
+            const int columns=37,rows=27;
+            var v=new List<Vector3>();var colors=new List<Color>();var t=new List<int>();
+            for(int row=0;row<rows;row++)for(int column=0;column<columns;column++)
+            {
+                float x=YardCentre.x-9+column*.5f,z=YardCentre.y-6.5f+row*.5f,blend=1-YardCoverage(x,z);
+                v.Add(new Vector3(x,YardPointHeight(x,z),z));
+                colors.Add(new Color(blend,Mathf.Lerp(SurfaceVariation(x,z),TerrainVariation(x,z),blend),0,1));
+            }
+            for(int row=0;row<rows-1;row++)for(int column=0;column<columns-1;column++)
+            {
+                float x=YardCentre.x-9+(column+.5f)*.5f,z=YardCentre.y-6.5f+(row+.5f)*.5f;
+                if(YardDistance(x,z)>1.05f)continue;
+                Cell(t,row*columns+column,columns);
+            }
+            Save("Farmyard parking apron",v,t,colors,material,true);
+        }
         static float AccessDistance(float x,float z)
         {
             Vector2 q=new Vector2(Mathf.Abs(x+12)-4.4f,Mathf.Abs(z+12)-1.4f);
@@ -197,7 +241,7 @@ namespace Harvest.Editor
         {
             float blend=Smooth(-.15f,.8f,AccessDistance(x,z)+(Noise(x,z,.27f,82)-.5f)*.10f);
             float top=Mathf.Lerp(.06f,RoadHeight(x,z),Smooth(-9,-7,x));
-            return Mathf.Lerp(top,RoadHeight(x,z),blend);
+            return Mathf.Lerp(top,Mathf.Max(RoadHeight(x,z),YardHeight(x,z)),blend);
         }
         static void Access(Material material)
         {
@@ -210,6 +254,7 @@ namespace Harvest.Editor
                 float blend=Smooth(-.15f,.8f,AccessDistance(x,z)+(Noise(x,z,.27f,82)-.5f)*.10f);
                 // Match the road gravel where the junction joins the main carriageway.
                 blend*=1-Smooth(-9.2f,-7,x);
+                blend*=1-YardCoverage(x,z);
                 colors.Add(new Color(blend,Mathf.Lerp(SurfaceVariation(x,z),TerrainVariation(x,z),blend),0,1));
             }
             for(int row=0;row<rows-1;row++) for(int column=0;column<columns-1;column++)
@@ -223,7 +268,7 @@ namespace Harvest.Editor
         }
         public static float SurfaceHeight(float x,float z)
         {
-            float ground=RoadHeight(x,z);
+            float ground=Mathf.Max(RoadHeight(x,z),YardHeight(x,z));
             if(x>=-18.5f&&x<=-7&&z>=-15.5f&&z<=-8.5f&&AccessDistance(x,z)<=1.1f)
             {
                 float x0=Mathf.Floor((x+18.5f)*2)*.5f-18.5f,z0=Mathf.Floor((z+15.5f)*2)*.5f-15.5f;
@@ -243,6 +288,7 @@ namespace Harvest.Editor
             material=new Material(source){name=name};
             material.SetTexture("_GroundMap",soil.GetTexture("_SurfaceMap"));material.SetColor("_GroundTint",soil.GetColor("_BaseColor"));
             material.SetFloat("_GroundScale",soil.GetFloat("_WorldScale"));material.SetFloat("_GroundSmoothness",soil.GetFloat("_Smoothness"));
+            material.SetFloat("_GroundReliefStrength",soil.GetFloat("_ReliefStrength"));
             material.SetFloat("_GroundBlendEnabled",1);material.SetFloat("_VertexTintStrength",1);
             AssetDatabase.CreateAsset(material,path);return material;
         }

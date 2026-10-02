@@ -26,7 +26,7 @@ namespace Harvest.Editor
             var inner=new[]{new Vector3(-half.x,top,-half.y),new Vector3(half.x,top,-half.y),new Vector3(half.x,top,half.y),new Vector3(-half.x,top,half.y)};
             var outer=new[]{new Vector3(-half.x-width,-.049f,-half.y-width),new Vector3(half.x+width,-.049f,-half.y-width),
                 new Vector3(half.x+width,-.049f,half.y+width),new Vector3(-half.x-width,-.049f,half.y+width)};
-            for(int i=0;i<4;i++) { Vector3 p=outer[i]+origin;outer[i].y=FarmNaturalGround.TerrainHeight(p.x,p.z)-origin.y+.001f; }
+            for(int i=0;i<4;i++) { Vector3 p=outer[i]+origin;outer[i].y=FarmNaturalGround.SurfaceHeight(p.x,p.z)-origin.y+.001f; }
             for(int i=0;i<4;i++) {int j=(i+1)%4;Quad(v,t,inner[i]+origin,inner[j]+origin,outer[j]+origin,outer[i]+origin);}
             Save(name,v,t,material);
         }
