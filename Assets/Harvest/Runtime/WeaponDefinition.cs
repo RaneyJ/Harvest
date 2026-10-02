@@ -28,6 +28,10 @@ namespace Harvest
         [Header("Art prefabs (meters, forward +Z; visuals only)")]
         public GameObject WorldModel;
         public GameObject ViewModelPrefab;
+        [Header("Authored first-person presentation")]
+        public bool OverrideViewPose;
+        public Vector3 ViewPosition = new Vector3(0.36f, -0.33f, 0.7f);
+        public Vector3 ViewEulerAngles;
         [HideInInspector] public int FeedbackRevision;
         [HideInInspector] public int AudioMixRevision;
         [Header("Audio")]

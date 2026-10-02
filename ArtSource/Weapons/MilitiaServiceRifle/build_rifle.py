@@ -29,21 +29,21 @@ def material(name,color,metal=0,rough=.55,wear=.25):
     ramp.color_ramp.elements[1].position=.8;ramp.color_ramp.elements[1].color=(*(min(c*1.13,1) for c in color),1);l.new(noise.outputs['Fac'],ramp.inputs[0])
     edge=n.new('ShaderNodeValToRGB');edge.color_ramp.elements[0].position=.505;edge.color_ramp.elements[0].color=(0,0,0,1)
     edge.color_ramp.elements[1].position=.60;edge.color_ramp.elements[1].color=(wear,wear,wear,1);l.new(pos.outputs['Pointiness'],edge.inputs[0])
-    mix=n.new('ShaderNodeMixRGB');mix.blend_type='MIX';mix.inputs[2].default_value=(.25,.255,.23,1) if metal else (min(color[0]*1.7,.20),min(color[1]*1.7,.20),min(color[2]*1.7,.20),1)
+    mix=n.new('ShaderNodeMixRGB');mix.blend_type='MIX';mix.inputs[2].default_value=(.10,.105,.085,1) if metal else (min(color[0]*1.7,.20),min(color[1]*1.7,.20),min(color[2]*1.7,.20),1)
     l.new(edge.outputs[0],mix.inputs[0]);l.new(ramp.outputs[0],mix.inputs[1]);l.new(mix.outputs[0],bs.inputs['Base Color'])
     bs.inputs['Metallic'].default_value=metal;bs.inputs['Roughness'].default_value=rough
     fine=n.new('ShaderNodeTexNoise');fine.inputs['Scale'].default_value=1800;fine.inputs['Detail'].default_value=2;l.new(pos.outputs['Position'],fine.inputs[0])
     bump=n.new('ShaderNodeBump');bump.inputs['Strength'].default_value=.22;bump.inputs['Distance'].default_value=.00012;l.new(fine.outputs['Fac'],bump.inputs['Height']);l.new(bump.outputs['Normal'],bs.inputs['Normal'])
     m['bake_metallic']=metal;m['bake_roughness']=rough
     return m
-olive=material('Paint | colony olive grey',(.145,.165,.120),.5,.54,.55)
-poly=material('Polymer | graphite',(.019,.026,.024),0,.67,.2)
-steel=material('Steel | parkerized',(.043,.058,.053),.82,.46,.45)
-rubber=material('Rubber | butt pad',(.019,.023,.021),0,.83,.1)
+olive=material('Paint | colony olive grey',(.050,.057,.037),.12,.70,.28)
+poly=material('Polymer | graphite',(.0065,.008,.0068),0,.78,.15)
+steel=material('Steel | parkerized',(.015,.021,.018),.70,.62,.25)
+rubber=material('Rubber | butt pad',(.004,.005,.0045),0,.87,.07)
 recess=material('Dark recessed surfaces',(.009,.013,.012),.2,.64,.05)
-orange=material('Faded orange inspection paint',(.48,.245,.065),.05,.68,.4)
-magmat=material('Magazine | graphite alloy',(.091,.107,.095),.65,.49,.45)
-fastener=material('Hardware | dark steel',(.13,.145,.13),.85,.35,.3)
+orange=material('Faded orange inspection paint',(.27,.125,.030),.02,.79,.15)
+magmat=material('Magazine | graphite alloy',(.025,.032,.024),.32,.70,.20)
+fastener=material('Hardware | dark steel',(.045,.055,.043),.70,.58,.20)
 
 
 def finish(obj,name,mat,bevel=.002,group='Body'):
@@ -115,7 +115,7 @@ def wire_loop(name,points,mat,radius=.003,group='Body'):
     bpy.context.view_layer.objects.active=o;o.select_set(True);bpy.ops.object.convert(target='MESH');o=bpy.context.object;o.select_set(False)
     return finish(o,name,mat,0,group)
 
-def screw(x,z,side,y=.061,r=.005):
+def screw(x,z,side,y=.059,r=.005):
     o=cylinder('Recessed hex fastener',(x,side*y,z),r,.003,fastener,vertices=12,bevel=.0005)
     slot(o,'Fastener slot',(x,side*(y+.0016),z),(.006,.002,.0014),.0003)
     return o
@@ -129,27 +129,27 @@ for z in [i*.012-.062 for i in range(25)]:box('Butt pad traction rib',(.465,0,z)
 
 for side in [-1,1]:
     y=side*.051
-    a=profile('Front receiver cladding',[(-.438,.148),(-.428,.209),(-.403,.230),(-.125,.230),(-.107,.212),(-.110,.158),(-.209,.158),(-.229,.143)],.014,olive,y,.0025)
+    a=profile('Front receiver cladding',[(-.438,.148),(-.428,.209),(-.403,.230),(-.125,.230),(-.107,.212),(-.110,.158),(-.209,.158),(-.229,.143)],.014,olive,y,.0038)
     for x,w in [(-.365,.075),(-.258,.078)]:slot(a,'Upper cooling recess',(x,y,.179),(w,.045,.017),.006)
-    profile('Mid receiver cladding',[(-.103,.156),(-.102,.230),(.046,.230),(.060,.214),(.055,.159),(-.010,.150)],.014,olive,y,.002)
-    p=profile('Rear receiver cladding',[(.061,.160),(.064,.229),(.206,.229),(.224,.213),(.219,.151),(.142,.142),(.105,.160)],.014,olive,y,.002)
+    profile('Mid receiver cladding',[(-.103,.156),(-.102,.230),(.046,.230),(.060,.214),(.055,.159),(-.010,.150)],.014,olive,y,.003)
+    p=profile('Rear receiver cladding',[(.061,.160),(.064,.229),(.206,.229),(.224,.213),(.219,.151),(.142,.142),(.105,.160)],.014,olive,y,.003)
     slot(p,'Rear exterior inset',(.166,y,.190),(.038,.04,.012),.004)
     profile('Lower receiver side', [(-.065,.057),(-.073,.140),(.076,.142),(.108,.121),(.315,.128),(.334,.113),(.319,.082),(.098,.067),(.057,.033),(-.018,.035)],.014,poly,side*.049,.0025)
     profile('Stock diagonal reinforcing panel',[(.322,.091),(.414,.106),(.426,.079),(.418,-.047),(.402,-.037),(.368,.015)],.009,poly,side*.048,.002)
-    for x,z in [(-.411,.202),(-.114,.182),(.066,.202),(.209,.214),(.316,.102),(.405,.129),(.404,-.019),(-.041,.089)]:screw(x,z,side)
+    for x,z,yy in [(-.411,.202,.059),(-.114,.182,.059),(.066,.202,.059),(.209,.214,.059),(.316,.102,.057),(.405,.129,.0465),(.404,-.019,.0535),(-.041,.089,.057)]:screw(x,z,side,y=yy)
     box('Butt plate steel keeper',(.426,side*.057,.165),(.014,.008,.104),steel,.001)
-    for z in [.127,.199]:screw(.426,z,side,y=.063,r=.004)
+    for z in [.127,.199]:screw(.426,z,side,y=.062,r=.004)
     # Faded factory inspection slashes: exterior identity only.
     for x in [.049,.061]:profile('Orange inspection stripe',[(x,.091),(x-.014,.125),(x-.006,.125),(x+.008,.091)],.0006,orange,side*.057,0)
 
-hand=profile('Ribbed polymer handguard',[(-.431,.063),(-.413,.139),(-.372,.150),(-.095,.147),(-.069,.122),(-.077,.037),(-.099,.018),(-.394,.018),(-.424,.037)],.117,poly,bevel=.005)
+hand=profile('Ribbed polymer handguard',[(-.431,.063),(-.413,.139),(-.372,.150),(-.095,.147),(-.069,.122),(-.077,.037),(-.099,.018),(-.394,.018),(-.424,.037)],.117,poly,bevel=.007)
 for side in [-1,1]:
     slot(hand,'Forearm upper vent',(-.299,side*.058,.117),(.176,.024,.014),.006)
-    box('Forearm seam bead',(-.251,side*.060,.088),(.306,.004,.005),steel,.001)
-    for i in range(12):
-        x=-.393+i*.024
-        p=profile('Molded handguard finger rib',[(x-.004,.083),(x+.003,.092),(x+.007,.081),(x+.007,.037),(x+.001,.025),(x-.007,.024),(x-.007,.035),(x-.003,.041)],.005,poly,side*.060,.0014)
-for i in range(12):box('Handguard underside rib',(-.393+i*.024,0,.017),(.010,.085,.005),poly,.0015)
+    box('Forearm seam bead',(-.251,side*.059,.088),(.304,.002,.003),poly,.001)
+    for i in range(11):
+        x=-.392+i*.025
+        slot(hand,'Rounded molded finger channel',(x,side*.060,.055),(.010,.010,.055),.004)
+for i in range(11):box('Handguard underside rib',(-.392+i*.025,0,.017),(.012,.082,.004),poly,.0018)
 
 # Grip and trigger guard retain open negative space.
 profile('Pistol grip',[(.016,.042),(.080,.054),(.150,-.170),(.133,-.190),(.083,-.197),(.065,-.180),(.077,-.158),(.010,.012)],.066,poly,bevel=.004,group='Grip')
@@ -176,7 +176,8 @@ ring_profile('Carry bridge',[(-.371,.232),(-.330,.295),(.212,.295),(.234,.275),(
 for x in [-.307,.207]:
     box('Sight pedestal',(x,0,.293),(.047,.055,.025),steel,.002)
     for side in [-1,1]:
-        profile('Sight protective ear',[(x-.020,.298),(x-.018,.346),(x-.010,.359),(x+.007,.359),(x+.018,.340),(x+.018,.298)],.009,steel,side*.022,.001)
+        ear=profile('Sight protective ear',[(x-.018,.298),(x-.016,.340),(x-.010,.354),(x+.004,.356),(x+.015,.340),(x+.016,.298)],.006,steel,side*.020,.0016)
+        slot(ear,'Sight hood relief',(x-.001,side*.020,.337),(.013,.025,.022),.005)
         screw(x,.311,side,y=.029,r=.004)
 box('Front sight blade',(-.307,0,.324),(.007,.005,.044),steel,.0008)
 rear=box('Rear aperture plate',(.207,0,.331),(.009,.026,.039),steel,.001)
@@ -209,7 +210,7 @@ for side in [-1,1]:
 box('Bolt',(.115,.074,.176),(.047,.030,.012),steel,.002,group='Bolt')
 
 # Sparse exposed chips follow handling edges rather than uniformly aging every surface.
-chipmat=material('Exposed alloy edge wear',(.29,.30,.255),.68,.57,.1)
+chipmat=material('Exposed alloy edge wear',(.12,.125,.105),.65,.68,.1)
 rng=random.Random(1707)
 for side in [-1,1]:
     verts=[];faces=[]
@@ -217,7 +218,7 @@ for side in [-1,1]:
         for i in range(count):
             x=rng.uniform(xa,xb);zz=z+rng.uniform(-.002,.001);w=rng.uniform(.0008,.005);h=rng.uniform(.0003,.0012)
             n=len(verts);verts.extend([(x,side*yy,zz),(x+w,side*yy,zz+h*.3),(x+w*.7,side*yy,zz+h),(x-w*.2,side*yy,zz+h*.7)])
-            faces.append((n,n+1,n+2,n+3))
+            faces.append((n,n+1,n+2,n+3) if side<0 else (n+3,n+2,n+1,n))
     mesh('Scattered cladding edge chips',verts,faces,chipmat,0)
 
 # Match the reference's long, low profile; keep circular hardware circular.
@@ -231,7 +232,7 @@ for obj in parts:
 for obj in parts:obj.location.x-=.077;obj.location.z+=.0507
 root=bpy.data.objects.new('MilitiaServiceRifle_EDITABLE',None);source.objects.link(root)
 for obj in parts:obj.parent=root
-root['asset']='Halo Harvest militia service rifle';root['units']='metres';root['authoring_forward']='-X';root['export_forward']='Unity +Z';root['revision']='01'
+root['asset']='Halo Harvest militia service rifle';root['units']='metres';root['authoring_forward']='-X';root['export_forward']='Unity +Z';root['revision']='02'
 
 # Studio cameras: real renders of this mesh, not generated concept images.
 def aim(obj,point):obj.rotation_euler=(Vector(point)-obj.location).to_track_quat('-Z','Y').to_euler()

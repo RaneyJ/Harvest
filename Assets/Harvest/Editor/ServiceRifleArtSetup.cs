@@ -9,7 +9,8 @@ namespace Harvest.Editor
     public static class ServiceRifleArtSetup
     {
         const string Folder = "Assets/Harvest/Art/Weapons/MilitiaServiceRifle";
-        const string PrefabPath = Folder + "/Militia Service Rifle.prefab";
+        public const string PrefabPath = Folder + "/Militia Service Rifle.prefab";
+        public const string ViewPrefabPath = Folder + "/Militia Service Rifle View.prefab";
 
         [MenuItem("Harvest/Art/Build Militia Service Rifle Prefab")]
         public static void Build()
@@ -51,6 +52,18 @@ namespace Harvest.Editor
                 material.EnableKeyword("_METALLICSPECGLOSSMAP");
                 material.EnableKeyword("_OCCLUSIONMAP");
                 AssetDatabase.CreateAsset(material, materialPath);
+            }
+            // A dedicated first-person prefab always uses the detailed mesh, without distance LOD switches.
+            if (AssetDatabase.LoadAssetAtPath<GameObject>(ViewPrefabPath) == null)
+            {
+                var viewRoot = new GameObject("Militia Service Rifle View");
+                try
+                {
+                    Instance("MilitiaServiceRifle", viewRoot.transform, material);
+                    PrefabUtility.SaveAsPrefabAsset(viewRoot, ViewPrefabPath);
+                }
+                finally { Object.DestroyImmediate(viewRoot); }
+                AssetDatabase.SaveAssets();
             }
             // Existing prefab/material edits are retained; model references refresh on FBX import.
             GameObject saved = AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);

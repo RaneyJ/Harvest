@@ -8,8 +8,8 @@
   "parts": [
     {
       "name": "Body",
-      "vertices": 26780,
-      "triangles": 51868
+      "vertices": 28452,
+      "triangles": 55328
     },
     {
       "name": "Grip",
@@ -32,11 +32,11 @@
       "triangles": 188
     }
   ],
-  "triangles": 59488,
+  "triangles": 62948,
   "dimensions_blender": [
     0.161,
     1.0548,
-    0.361
+    0.3589
   ],
-  "lod1_triangles": 19036
+  "lod1_triangles": 20142
 }

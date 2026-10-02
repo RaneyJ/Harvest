@@ -11,6 +11,7 @@ namespace Harvest
         public MeleeAttack Melee;
         Vector3[] positions;
         Quaternion[] rotations;
+        AuthoredWeaponAnimation[] authored;
         CharacterController controller;
         WeaponDefinition displayed;
         float modelKick;
@@ -26,8 +27,20 @@ namespace Harvest
             controller = Loadout.GetComponent<CharacterController>();
             rotations = new Quaternion[Models.Length];
             positions = new Vector3[Models.Length];
+            authored = new AuthoredWeaponAnimation[Models.Length];
             for (int i = 0; i < Models.Length; i++)
-                if (Models[i] != null) { positions[i] = Models[i].transform.localPosition; rotations[i] = Models[i].transform.localRotation; }
+                if (Models[i] != null)
+                {
+                    authored[i] = Models[i].GetComponentInChildren<AuthoredWeaponAnimation>(true);
+                    WeaponDefinition definition = Definitions != null && i < Definitions.Length ? Definitions[i] : null;
+                    if (definition != null && definition.OverrideViewPose)
+                    {
+                        Models[i].transform.localPosition = definition.ViewPosition;
+                        Models[i].transform.localRotation = Quaternion.Euler(definition.ViewEulerAngles);
+                    }
+                    positions[i] = Models[i].transform.localPosition;
+                    rotations[i] = Models[i].transform.localRotation;
+                }
             if (Melee != null) Melee.Swing += BeginSwing;
             Loadout.Changed += Refresh;
             Refresh();
@@ -71,8 +84,9 @@ namespace Harvest
                 if (aim != null && Loadout.Current != null && Loadout.Current.IsPrecision && Models[i].activeSelf)
                     rest = Vector3.Lerp(rest, Loadout.Current.AdsModelPosition, aim.Blend);
                 bool active = Models[i].activeSelf;
-                Models[i].transform.localPosition = rest + (active ? new Vector3(sway, bob - reload * 0.18f, thrust - modelKick) : Vector3.zero);
-                Models[i].transform.localRotation = rotations[i] * Quaternion.Euler(active ? -rotationKick + reload * 22f : 0f, 0f, active ? -reload * 12f : 0f);
+                float visualReload = authored[i] != null && authored[i].HasReloadPose ? 0f : reload;
+                Models[i].transform.localPosition = rest + (active ? new Vector3(sway, bob - visualReload * 0.18f, thrust - modelKick) : Vector3.zero);
+                Models[i].transform.localRotation = rotations[i] * Quaternion.Euler(active ? -rotationKick + visualReload * 22f : 0f, 0f, active ? -visualReload * 12f : 0f);
                 Transform bolt = Models[i].transform.Find("Bolt");
                 if (bolt != null)
                 {
