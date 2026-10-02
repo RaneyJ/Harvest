@@ -1,0 +1,42 @@
+{
+  "blender": "4.5.3 LTS",
+  "units": "meters",
+  "unity_forward": "+Z",
+  "origin": "pistol grip centre",
+  "materials": 1,
+  "atlas_size": 2048,
+  "parts": [
+    {
+      "name": "Body",
+      "vertices": 26780,
+      "triangles": 51868
+    },
+    {
+      "name": "Grip",
+      "vertices": 2160,
+      "triangles": 4236
+    },
+    {
+      "name": "Trigger",
+      "vertices": 136,
+      "triangles": 268
+    },
+    {
+      "name": "Magazine",
+      "vertices": 1488,
+      "triangles": 2928
+    },
+    {
+      "name": "Bolt",
+      "vertices": 96,
+      "triangles": 188
+    }
+  ],
+  "triangles": 59488,
+  "dimensions_blender": [
+    0.161,
+    1.0548,
+    0.361
+  ],
+  "lod1_triangles": 19036
+}
