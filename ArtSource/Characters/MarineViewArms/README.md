@@ -32,8 +32,9 @@ Arm poses use a two-bone solve baked into bone transforms. No Blender constraint
 1. Pull `prototype/the-line` and let Unity import the assets.
 2. Run **Harvest > Art > Build Marine Rifle Arms Review**. Save the current scene when prompted. This builds the materials and animated prefab, then opens a separate camera review scene. Use a 16:9 Game view.
 3. Select the FBX in the Project window and preview its Idle, Fire and Reload clips. Check finger contact, normal-map shading and magazine travel.
-4. Run **Harvest > Art > Apply Animated Marine Rifle To Prototype**, then rebuild The Line. Only the service-rifle first-person prefab changes; its world model uses the separate rifle-only prefab.
-5. In Play mode inspect sustained fire, reload, switching away/back during reload, movement, melee and restart/death. Check the near plane throughout the motion. Generated prefab and material edits are retained on later builds.
+4. With The Line open and Play mode stopped, run **Harvest > Art > Apply Animated Marine Rifle To Prototype**, then save the scene. This immediately replaces the existing service-rifle player view and updates its shared definition and marine prefab. You do not need to rebuild the environment. Player view replacement supports Undo; shared definition/prefab assets are saved by the command.
+5. Fresh **Harvest > Build The Line Prototype** builds automatically prepare and assign the animated service rifle, camera pose and rifle-only world model.
+6. In Play mode inspect sustained fire, reload, switching away/back during reload, movement, melee and restart/death. Check the near plane throughout the motion. Generated prefab and material edits are retained on later builds.
 
 Unity is not installed in the authoring environment. C# compilation, Unity's FBX importer, animation sampling, lighting and final Play-mode appearance require Editor verification. The neutral Blender preview cannot establish those results. Sprint, equip, bespoke melee, grenade, damage reactions and other-weapon hand poses are not authored in this pass.
 
@@ -49,3 +50,4 @@ ffmpeg -y -framerate 20 -i Review/MotionFrames/%04d.png -c:v libx264 -pix_fmt yu
 ```
 
 `build_view_arms.py` regenerates geometry, weights and the arm atlas, then invokes `animate_view_arms.py`. Running `animate_view_arms.py` on its own updates the actions, FBX and review renders from the editable source without rebuilding geometry or rebaking textures. Both overwrite generated outputs; copy the source before hand editing. `MarineServiceRifleReview.blend` and image-sequence intermediates are regenerated locally and excluded from git.
+

@@ -66,15 +66,23 @@ namespace Harvest.Editor
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
             var definition = AssetDatabase.LoadAssetAtPath<WeaponDefinition>("Assets/Harvest/Data/Service Rifle.asset");
             if (definition == null) throw new InvalidOperationException("Build The Line once to create its Service Rifle definition.");
-            Pose pose = ReadPose(); ServiceRifleArtSetup.Build();
+            ServiceRifleArtSetup.Build();
             Undo.RecordObject(definition, "Apply militia service rifle art");
             definition.ViewModelPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(ServiceRifleArtSetup.ViewPrefabPath);
             definition.WorldModel = AssetDatabase.LoadAssetAtPath<GameObject>(ServiceRifleArtSetup.PrefabPath);
-            definition.OverrideViewPose = true;
-            definition.ViewPosition = pose.Position; definition.ViewEulerAngles = pose.Euler;
+            ApplyPose(definition);
             EditorUtility.SetDirty(definition); AssetDatabase.SaveAssets();
             Debug.Log("Militia rifle art and first-person pose assigned. Rebuild The Line to refresh the player model. Authored NPC held models must be refreshed separately; existing NPC presentation is preserved.");
         }
+        public static void ApplyPose(WeaponDefinition definition)
+        {
+            if (definition == null) throw new ArgumentNullException(nameof(definition));
+            Pose pose = ReadPose();
+            definition.OverrideViewPose = true;
+            definition.ViewPosition = pose.Position;
+            definition.ViewEulerAngles = pose.Euler;
+        }
+
         static void Validate(Transform view, Camera camera, Pose pose)
         {
             Transform muzzle = null;
@@ -102,3 +110,4 @@ namespace Harvest.Editor
         }
     }
 }
+

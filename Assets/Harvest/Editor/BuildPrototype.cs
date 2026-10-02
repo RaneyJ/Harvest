@@ -39,12 +39,14 @@ namespace Harvest.Editor
         [MenuItem("Harvest/Build The Line Prototype")]
         public static void Build()
         {
+            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             Directory.CreateDirectory("Assets/Harvest/Scenes");
             Directory.CreateDirectory("Assets/Harvest/Materials");
             Directory.CreateDirectory("Assets/Harvest/Prefabs");
             Directory.CreateDirectory("Assets/Harvest/Data");
             HarvestRenderSetup.Ensure();
+            MarineViewArmsSetup.EnsureAssets();
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             Material soil = MakeMaterial("Soil", new Color(0.29f, 0.24f, 0.17f));
@@ -94,6 +96,7 @@ namespace Harvest.Editor
             for (int i = 0; i < 3; i++) Smoke(new Vector3(-18 + i * 20, 0.3f, 40 + i * 10));
 
             WeaponDefinition rifleData = MakeWeapon("Service Rifle", "SERVICE RIFLE", 32, 128, 24f, 1f, 1, 0f, 90f, 0.12f, 1.8f, true, human);
+            MarineViewArmsSetup.AssignToDefinition(rifleData);
             WeaponDefinition shotgunData = MakeWeapon("Combat Shotgun", "COMBAT SHOTGUN", 6, 24, 20f, 1.35f, 8, 6f, 22f, 0.75f, 2.3f, false, rust);
             shotgunData.DamagePerPellet = Mathf.Max(20f, shotgunData.DamagePerPellet);
             EditorUtility.SetDirty(shotgunData);
@@ -181,7 +184,8 @@ namespace Harvest.Editor
             feedback.Armor = marineArmor;
             feedback.View = camera;
             GameObject rifle = WeaponModelGeometry.Create(rifleData, view.transform);
-            rifle.transform.localPosition = new Vector3(0.36f, -0.33f, 0.7f);
+            rifle.transform.localPosition = rifleData.ViewPosition;
+            rifle.transform.localRotation = Quaternion.Euler(rifleData.ViewEulerAngles);
             GameObject shotgun = WeaponModelGeometry.Create(shotgunData, view.transform);
             shotgun.transform.localPosition = new Vector3(0.36f, -0.35f, 0.62f);
             GameObject pistolModel = WeaponModelGeometry.Create(plasmaPistol, view.transform);
@@ -762,14 +766,7 @@ namespace Harvest.Editor
                 if (contents.GetComponent<FootstepAudio>() == null) { ConfigureFootsteps(contents); changed = true; }
                 FootstepAudio steps = contents.GetComponent<FootstepAudio>();
                 if (steps.AudioMixRevision < 1) { steps.Volume *= 0.6f; steps.AudioMixRevision = 1; changed = true; }
-                if (contents.transform.Find("Held weapon/Receiver") == null)
-                {
-                    AddHeldWeapon(contents, rifle, false);
-                    AlliedMarine ally = contents.GetComponent<AlliedMarine>();
-                    ally.GunVisual = contents.transform.Find("Held weapon");
-                    ally.GunVisual.localPosition = new Vector3(0.38f, 1.25f, 0.45f);
-                    changed = true;
-                }
+                if (MarineViewArmsSetup.RefreshMarineWorldView(contents.GetComponent<AlliedMarine>(), rifle)) changed = true;
                 if (changed) PrefabUtility.SaveAsPrefabAsset(contents, path);
                 PrefabUtility.UnloadPrefabContents(contents);
                 return AssetDatabase.LoadAssetAtPath<GameObject>(path).GetComponent<AlliedMarine>();
@@ -913,3 +910,4 @@ namespace Harvest.Editor
         }
     }
 }
+
