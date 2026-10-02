@@ -1,0 +1,223 @@
+{
+  "Version": 1,
+  "Provider": "Poly Haven",
+  "License": "CC0",
+  "Resolution": 2048,
+  "Materials": [
+    {
+      "Key": "Plaster",
+      "AssetId": "white_plaster_02",
+      "SourcePage": "https://polyhaven.com/a/white_plaster_02",
+      "Authors": "Rob Tuytel",
+      "WidthMeters": 1.0,
+      "HeightMeters": 1.0,
+      "Tint": {
+        "r": 0.96,
+        "g": 0.94,
+        "b": 0.88,
+        "a": 1
+      },
+      "NormalStrength": 0.45,
+      "OcclusionStrength": 0.35,
+      "SmoothnessScale": 1,
+      "Files": [
+        {
+          "Role": "Albedo",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/white_plaster_02/white_plaster_02_diff_2k.jpg",
+          "Md5": "35f9c96c16aa0d934da7884b232f6d07",
+          "Sha256": "0ca5245ba70777d3e41ff4566c9f8d363855461891802c55cb7dc0f6f85f084e",
+          "Bytes": 2568315,
+          "FileName": "Albedo.jpg"
+        },
+        {
+          "Role": "NormalGL",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/white_plaster_02/white_plaster_02_nor_gl_2k.png",
+          "Md5": "5ebaee84d0be9fce4e5047ab97d584ea",
+          "Sha256": "097bd8bc72bcb5c75fd26bc11f981dad5944ceec4a5d02481b24915c76c34839",
+          "Bytes": 24664332,
+          "FileName": "NormalGL.png"
+        },
+        {
+          "Role": "ARM",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/white_plaster_02/white_plaster_02_arm_2k.png",
+          "Md5": "9f9c452ef1824ae987a683b5336c8810",
+          "Sha256": "08d767f455e46ded85d41aff247d8fb33bb5aa2504d679069e1ed479ade522b5",
+          "Bytes": 18860869,
+          "FileName": "ARM.png"
+        }
+      ]
+    },
+    {
+      "Key": "Timber",
+      "AssetId": "rough_wood",
+      "SourcePage": "https://polyhaven.com/a/rough_wood",
+      "Authors": "Rob Tuytel",
+      "WidthMeters": 0.5,
+      "HeightMeters": 0.5,
+      "Tint": {
+        "r": 1,
+        "g": 0.9,
+        "b": 0.8,
+        "a": 1
+      },
+      "NormalStrength": 0.6,
+      "OcclusionStrength": 0.5,
+      "SmoothnessScale": 1,
+      "Files": [
+        {
+          "Role": "Albedo",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/rough_wood/rough_wood_diff_2k.jpg",
+          "Md5": "f5f9c55696f047ceaa49dc97c5aa5526",
+          "Sha256": "0bd2b3195db9b54d55aa0f842801220ec5e1d389f5fc1e670b378bdaca3f8e7b",
+          "Bytes": 2223327,
+          "FileName": "Albedo.jpg"
+        },
+        {
+          "Role": "NormalGL",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/rough_wood/rough_wood_nor_gl_2k.png",
+          "Md5": "198eec08d20acddfd651956fba2fc538",
+          "Sha256": "5507853e98e893d739e77c7a1662bb28fb976fc450fb66715733e66f9b1d15f0",
+          "Bytes": 6604342,
+          "FileName": "NormalGL.png"
+        },
+        {
+          "Role": "ARM",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/rough_wood/rough_wood_arm_2k.png",
+          "Md5": "a79660c915557e8530d44e0c2fa0fceb",
+          "Sha256": "68b8282b67ae8e248da99fa4cf115ee8b755d8a92f0da5e1daeba29322a54d27",
+          "Bytes": 5106123,
+          "FileName": "ARM.png"
+        }
+      ]
+    },
+    {
+      "Key": "Roofing",
+      "AssetId": "corrugated_iron_02",
+      "SourcePage": "https://polyhaven.com/a/corrugated_iron_02",
+      "Authors": "Jenelle van Heerden, Sergej Majboroda",
+      "WidthMeters": 2.700000047683716,
+      "HeightMeters": 2.700000047683716,
+      "Tint": {
+        "r": 0.7,
+        "g": 0.73,
+        "b": 0.74,
+        "a": 1
+      },
+      "NormalStrength": 0.45,
+      "OcclusionStrength": 0.35,
+      "SmoothnessScale": 1,
+      "Files": [
+        {
+          "Role": "Albedo",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/corrugated_iron_02/corrugated_iron_02_diff_2k.jpg",
+          "Md5": "88f0ec0310e41f408dd0092c8c53db58",
+          "Sha256": "1bd2b9900e066d7e6cbacc5093aa4204db71c1bbe13b42a3d8ad23d04fa8075a",
+          "Bytes": 2325335,
+          "FileName": "Albedo.jpg"
+        },
+        {
+          "Role": "NormalGL",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/corrugated_iron_02/corrugated_iron_02_nor_gl_2k.png",
+          "Md5": "cf38408159183b730624ecdf76fa6b5b",
+          "Sha256": "57966705714a10b718efc31368879c75fbf24ee3d3295106eada9094513f9cbc",
+          "Bytes": 20397959,
+          "FileName": "NormalGL.png"
+        },
+        {
+          "Role": "ARM",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/corrugated_iron_02/corrugated_iron_02_arm_2k.png",
+          "Md5": "2f561a82f913f872ee3e49eb1d7fb04e",
+          "Sha256": "8756a4c1d02c0f6b8a97d505794d5ddfdd518b1d88a15eb5d0db517e40f56262",
+          "Bytes": 20872886,
+          "FileName": "ARM.png"
+        }
+      ]
+    },
+    {
+      "Key": "Steel",
+      "AssetId": "metal_plate_02",
+      "SourcePage": "https://polyhaven.com/a/metal_plate_02",
+      "Authors": "Rob Tuytel",
+      "WidthMeters": 2.0,
+      "HeightMeters": 2.0,
+      "Tint": {
+        "r": 0.65,
+        "g": 0.7,
+        "b": 0.75,
+        "a": 1
+      },
+      "NormalStrength": 0.45,
+      "OcclusionStrength": 0.4,
+      "SmoothnessScale": 1,
+      "Files": [
+        {
+          "Role": "Albedo",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/metal_plate_02/metal_plate_02_diff_2k.jpg",
+          "Md5": "519b43cf88b4b6ea74bd259e976f2170",
+          "Sha256": "2bf77bbcf18c862bf1e1501d1953ce9d511e80df6305b46e2f38b788bd37b581",
+          "Bytes": 2604239,
+          "FileName": "Albedo.jpg"
+        },
+        {
+          "Role": "NormalGL",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/metal_plate_02/metal_plate_02_nor_gl_2k.png",
+          "Md5": "c210604ae29c0d1e016fe845b8eec939",
+          "Sha256": "b6fce599aeb0e92735e812b36bfeab8e7f0029bd3b99747bfb2a456ab93a29fe",
+          "Bytes": 12046578,
+          "FileName": "NormalGL.png"
+        },
+        {
+          "Role": "ARM",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/metal_plate_02/metal_plate_02_arm_2k.png",
+          "Md5": "85034e3f83f61ae0a6b3e9a1d759bd8c",
+          "Sha256": "9043c57427d9cf05a469add45d9ee713cdd7468a365103ab897fd6935b83e29f",
+          "Bytes": 21410360,
+          "FileName": "ARM.png"
+        }
+      ]
+    },
+    {
+      "Key": "Foundation",
+      "AssetId": "concrete_floor_01",
+      "SourcePage": "https://polyhaven.com/a/concrete_floor_01",
+      "Authors": "Rob Tuytel",
+      "WidthMeters": 2.0,
+      "HeightMeters": 2.0,
+      "Tint": {
+        "r": 0.92,
+        "g": 0.94,
+        "b": 0.9,
+        "a": 1
+      },
+      "NormalStrength": 0.6,
+      "OcclusionStrength": 0.5,
+      "SmoothnessScale": 1,
+      "Files": [
+        {
+          "Role": "Albedo",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/2k/concrete_floor_01/concrete_floor_01_diff_2k.jpg",
+          "Md5": "bde1be20188bbec1d3970f37ee210ca1",
+          "Sha256": "ca24c52dabae67ef49093f91d8f9b9e5328a3b9fcb1327742ff6181ee542e017",
+          "Bytes": 2967720,
+          "FileName": "Albedo.jpg"
+        },
+        {
+          "Role": "NormalGL",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/concrete_floor_01/concrete_floor_01_nor_gl_2k.png",
+          "Md5": "dc23533ce7469b6c464eaf9dbd30f461",
+          "Sha256": "38fa64042bf57cd56cbaa92093d13fb09547d620c1ba5ce906512021c80d512e",
+          "Bytes": 7626542,
+          "FileName": "NormalGL.png"
+        },
+        {
+          "Role": "ARM",
+          "Url": "https://dl.polyhaven.org/file/ph-assets/Textures/png/2k/concrete_floor_01/concrete_floor_01_arm_2k.png",
+          "Md5": "7a02228bbc57b525f1d60fc4d8f15c82",
+          "Sha256": "b33a84cd7f48c7ec5c716bc0754e756981cb4d07ffbff93c161e4396d795f148",
+          "Bytes": 6067698,
+          "FileName": "ARM.png"
+        }
+      ]
+    }
+  ]
+}

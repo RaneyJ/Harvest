@@ -1,0 +1,13 @@
+{
+  "blender": "4.5.3 LTS",
+  "arm_triangles": 16648,
+  "bones": 48,
+  "clips": {
+    "Idle": 3,
+    "Fire": 0.2,
+    "Reload": 2.4
+  },
+  "source_fps": 30,
+  "atlas": 1024,
+  "status": "Blender export and renders; Unity verification required"
+}

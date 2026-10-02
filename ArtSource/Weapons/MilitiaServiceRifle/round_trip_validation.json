@@ -1,0 +1,32 @@
+[
+  {
+    "file": "MilitiaServiceRifle.fbx",
+    "triangles": 62948,
+    "dimensions": [
+      0.161,
+      1.0548,
+      0.3589
+    ],
+    "round_trip": "passed"
+  },
+  {
+    "file": "MilitiaServiceRifle_LOD1.fbx",
+    "triangles": 20142,
+    "dimensions": [
+      0.1609,
+      1.0547,
+      0.3589
+    ],
+    "round_trip": "passed"
+  },
+  {
+    "file": "MilitiaServiceRifle.glb",
+    "triangles": 62948,
+    "dimensions": [
+      0.161,
+      1.0548,
+      0.3589
+    ],
+    "round_trip": "passed"
+  }
+]
